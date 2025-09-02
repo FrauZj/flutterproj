@@ -34,6 +34,18 @@ class MyAppState extends ChangeNotifier {
     current = WordPair.random();
     notifyListeners();
   }
+
+  
+   var favorites = <WordPair>[];
+
+  void toggleFavorite() {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
+    } else {
+      favorites.add(current);
+    }
+    notifyListeners();
+  }
 }
 
 // ...
@@ -46,20 +58,43 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {           // ← 1
     var appState = context.watch<MyAppState>();
-    var pair = appState.current;   
+    var pair = appState.current;  
+
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
 
     return Scaffold(                             // ← 3
-      body: Column(                              // ← 4
-        children: [
-          Text('A random AWESOME idea:'),        // ← 5
-          BigCard(pair: pair),    // ← 6
-          ElevatedButton(
-            onPressed: () {
-               appState.getNext();
-            },
-            child: Text('Next'),
-          ),
-        ],                                       // ← 7
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,                            
+          children: [       // ← 5
+            BigCard(pair: pair),
+            SizedBox(height: 10),    // ← 6
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                ElevatedButton.icon(
+                  onPressed: () {
+                    appState.toggleFavorite();
+                  },
+                  icon: Icon(icon),
+                  label: Text('Like'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                     appState.getNext();
+                  },
+                  child: Text('Next'),
+                ),
+              ],
+            ),
+          ],                                       // ← 7
+        ),
       ),
     );
   }
