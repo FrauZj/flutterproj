@@ -19,3 +19,5 @@ class _FcolorState extends State<Fcolor> {
       child: const FlutterLogo(size: 75));
     }
 }
+
+// useless now, used for testing out the flutter stuff
