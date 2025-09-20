@@ -188,8 +188,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             left: 0,
             right: 0,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              spacing: -600,
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 100,
               children: [
                 ResourceIndicator(
                   title: 'Hunger',
@@ -237,7 +237,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               right: _dragPosition > 0 ? 50 : null,
               child: AnimatedOpacity(
                 opacity: _isDragging ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 10),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(

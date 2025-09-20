@@ -171,7 +171,6 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
 
               const SizedBox(height: 20),
 
-              // Navigation hints (does NOT move with cursor)
               const Text(
                 '← Swipe left or right →',
                 style: TextStyle(

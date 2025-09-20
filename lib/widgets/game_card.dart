@@ -8,6 +8,7 @@ class GameCard extends StatelessWidget {
     required this.cardData,
   });
 
+
   @override
   Widget build(BuildContext context) {
     return Card(
