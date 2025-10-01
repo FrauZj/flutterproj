@@ -4,6 +4,7 @@ import 'card_logic.dart';
 import 'widgets/resource_indicator.dart';
 import 'widgets/game_card.dart';
 import 'widgets/game_over_card.dart';
+import 'flippable_card.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -11,8 +12,7 @@ class GameScreen extends StatefulWidget {
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
-// i think this is atleast somehting good to use as a base
-// Evendoe i dont really snow.
+
 class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
   final CardLogic gameLogic = CardLogic();
   late AnimationController _animationController;
@@ -20,6 +20,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   bool _isDragging = false;
   Offset? _dragStart;
   bool _gameOver = false;
+  bool _showReply = false;
+  bool _waitingForContinue = false;
+  bool _resetFlip = false;
+  bool _isProcessingChoice = false; // Add this to prevent multiple triggers
+  
+  Map<String, dynamic> _currentCard = {};
+  Map<String, dynamic> _nextCard = {};
 
   @override
   void initState() {
@@ -28,6 +35,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+    _currentCard = gameLogic.currentCard;
+    _nextCard = _currentCard;
   }
 
   @override
@@ -37,7 +46,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void _onDragStart(DragStartDetails details) {
-    if (_gameOver) return;
+    if (_gameOver || _isProcessingChoice) return;
     setState(() {
       _isDragging = true;
       _dragStart = details.localPosition;
@@ -45,47 +54,100 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
-    if (_gameOver || _dragStart == null) return;
+    if (_gameOver || _isProcessingChoice || _dragStart == null) return;
     setState(() {
       _dragPosition = details.localPosition.dx - _dragStart!.dx;
     });
   }
 
   void _onDragEnd(DragEndDetails details) {
-    if (_gameOver) return;
+    if (_gameOver || _isProcessingChoice) return;
     
     setState(() {
       _isDragging = false;
     });
 
-    // Determine if swipe was significant enough
     if (_dragPosition.abs() > 100) {
-      final bool isLeftChoice = _dragPosition < 0;
+      _isProcessingChoice = true; // Prevent multiple triggers
       
-      // choice logic
-      gameLogic.applyChoice(isLeftChoice);
-      
-      // Check for game over
-      if (gameLogic.score > 0) {
-        setState(() {
-          _gameOver = true;
-        });
+      if (_waitingForContinue) {
+        // This is a reply card swipe - any direction continues
+        _proceedToNextCard();
       } else {
-        // Animate card swipe off screen
-        _animationController.forward(from: 0.0).then((_) {
+        // Normal card swipe
+        final bool isLeftChoice = _dragPosition < 0;
+        final Map<String, dynamic> playedCard = _currentCard;
+        gameLogic.applyChoice(isLeftChoice);
+        _nextCard = gameLogic.currentCard;
+        
+        if (gameLogic.score > 0) {
           setState(() {
-            _dragPosition = 0.0;
+            _gameOver = true;
+            _isProcessingChoice = false;
           });
-        });
+        } else {
+          if (playedCard.containsKey('replyText') && playedCard['replyText'] != null) {
+            setState(() {
+              _waitingForContinue = true;
+              _showReply = true;
+            });
+            // Reset position immediately when showing reply
+            _resetCardPosition().then((_) {
+              _isProcessingChoice = false;
+            });
+          } else {
+            _proceedToNextCard();
+          }
+        }
       }
     } else {
-      // Return card to center if swipe wasn't significant
-      _animationController.forward(from: 0.0).then((_) {
-        setState(() {
-          _dragPosition = 0.0;
-        });
+      _resetCardPosition().then((_) {
+        _isProcessingChoice = false;
       });
     }
+  }
+
+  void _proceedToNextCard() {
+    // First reset the card position
+    _resetCardPosition().then((_) {
+      // Then flip back to front if we were showing reply
+      if (_showReply) {
+        setState(() {
+          _resetFlip = true;
+        });
+        
+        // Wait for flip animation, then update card
+        Future.delayed(const Duration(milliseconds: 600), () {
+          setState(() {
+            _currentCard = _nextCard;
+            _showReply = false;
+            _waitingForContinue = false;
+            _resetFlip = false;
+            _isProcessingChoice = false;
+          });
+        });
+      } else {
+        // No flip needed, just update card
+        setState(() {
+          _currentCard = _nextCard;
+          _showReply = false;
+          _waitingForContinue = false;
+          _isProcessingChoice = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _resetCardPosition() {
+    return _animationController.forward(from: 0.0).then((_) {
+      setState(() {
+        _dragPosition = 0.0;
+      });
+    });
+  }
+
+  void _onFlipComplete() {
+    // Flip to back complete
   }
 
   void _resetGame() {
@@ -93,6 +155,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       gameLogic.resetGame();
       _gameOver = false;
       _dragPosition = 0.0;
+      _showReply = false;
+      _waitingForContinue = false;
+      _resetFlip = false;
+      _isProcessingChoice = false;
+      _currentCard = gameLogic.currentCard;
+      _nextCard = _currentCard;
     });
   }
 
@@ -174,12 +242,16 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     height: 400,
                     child: _gameOver 
                       ? GameOverCard(day: gameLogic.day, onReset: _resetGame)
-                      : GameCard(cardData: gameLogic.currentCard),
+                      : FlippableCard(
+                          cardData: _currentCard,
+                          showReply: _showReply,
+                          resetFlip: _resetFlip,
+                          onFlipComplete: _onFlipComplete,
+                        ),
                   ),
                 ),
               ),
             ),
-            
           ),
           
           // Resource indicators
@@ -230,7 +302,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
           
           // Choice indicators
-          if (_isDragging)
+          if (_isDragging && !_waitingForContinue && !_isProcessingChoice)
             Positioned(
               bottom: 100,
               left: _dragPosition < 0 ? 50 : null,
@@ -246,9 +318,34 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   ),
                   child: Text(
                     _dragPosition < 0 
-                      ? gameLogic.currentCard['leftChoice']
-                      : gameLogic.currentCard['rightChoice'],
+                      ? _currentCard['leftChoice']
+                      : _currentCard['rightChoice'],
                     style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // Reply card indicator
+          if (_isDragging && _waitingForContinue && !_isProcessingChoice)
+            Positioned(
+              bottom: 100,
+              left: MediaQuery.of(context).size.width / 2 - 60,
+              child: AnimatedOpacity(
+                opacity: _isDragging ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Continue...',
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),

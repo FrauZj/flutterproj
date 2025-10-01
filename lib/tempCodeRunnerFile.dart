@@ -17,39 +17,59 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
   // Variables for mouse tracking
   double _cardOffsetX = 0.0;
   double _cardOffsetY = 0.0;
+  
+  // Track current card display
+  Map<String, dynamic> _currentDisplayCard = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDisplayCard = cardLogic.currentCard;
+  }
+
+  void _handleChoice(bool isLeftChoice) {
+    setState(() {
+      selected = !selected;
+      _color = isLeftChoice ? Colors.blue : Colors.green;
+      
+      // Apply the choice to game logic
+      cardLogic.applyChoice(isLeftChoice);
+      
+      // Update displayed card
+      _currentDisplayCard = cardLogic.currentCard;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background gesture areas for left and right swipes
+        // Background gesture areas for left and right choices
         Row(
           children: [
-            // Left side GestureDetector
+            // Left choice area
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selected = !selected;
-                    _color = Colors.blue;
-                    cardLogic.previousCard();
-                  });
-                },
-                child: Container(color: Colors.transparent),
+                onTap: () => _handleChoice(true),
+                child: Container(
+                  color: Colors.transparent,
+                  child: const Center(
+                    child: Icon(Icons.arrow_back, color: Colors.red, size: 50),
+                  ),
+                ),
               ),
             ),
             
-            // Right side GestureDetector
+            // Right choice area
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selected = !selected;
-                    _color = Colors.green;
-                    cardLogic.nextCard();
-                  });
-                },
-                child: Container(color: Colors.transparent),
+                onTap: () => _handleChoice(false),
+                child: Container(
+                  color: Colors.transparent,
+                  child: const Center(
+                    child: Icon(Icons.arrow_forward, color: Colors.green, size: 50),
+                  ),
+                ),
               ),
             ),
           ],
@@ -127,14 +147,59 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
                     ),
                     duration: const Duration(milliseconds: 150),
                     curve: Curves.easeOut,
-                    child: Center(
-                      child: Text(
-                        'Card ${cardLogic.currentCardIndex}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Card header with type indicator
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _getCardTypeColor(_currentDisplayCard['type']),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  _getCardTypeLabel(_currentDisplayCard['type']),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'Day ${cardLogic.day} | Act ${cardLogic.currentAct}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Main card content
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                _currentDisplayCard['text'] ?? 'Loading...',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          
+                        ],
                       ),
                     ),
                   ),
@@ -143,7 +208,7 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
 
               const SizedBox(height: 30),
 
-              // Text display area below the card (does NOT move with cursor)
+              // Resource indicators below the card
               Container(
                 width: 500,
                 padding: const EdgeInsets.all(16.0),
@@ -158,30 +223,101 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
                     ),
                   ],
                 ),
-                child: Text(
-                  cardLogic.currentCard['text'],
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    height: 1.4,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildResourceIndicator('Hunger', cardLogic.resources['hunger']!, Colors.orange),
+                    _buildResourceIndicator('Sanity', cardLogic.resources['sanity']!, Colors.purple),
+                    _buildResourceIndicator('Money', cardLogic.resources['money']!, Colors.green),
+                    _buildResourceIndicator('Rep', cardLogic.resources['reputation']!, Colors.blue),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              const Text(
-                '← Swipe left or right →',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
+              
+              
+              // Game over message
+              if (cardLogic.score > 0)
+                Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red[900],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Game Over! Survived ${cardLogic.day} days. Tap to restart.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildResourceIndicator(String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$value',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getCardTypeColor(String? type) {
+    switch (type) {
+      case 'story':
+        return Colors.blue;
+      case 'side_story':
+        return Colors.purple;
+      case 'value':
+        return Colors.orange;
+      case 'secret':
+        return Colors.red;
+      case 'random':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getCardTypeLabel(String? type) {
+    switch (type) {
+      case 'story':
+        return 'STORY';
+      case 'side_story':
+        return 'SIDESTORY';
+      case 'value':
+        return 'EMERGENCY';
+      case 'secret':
+        return 'SECRET';
+      case 'random':
+        return 'RANDOM';
+      default:
+        return 'EVENT';
+    }
   }
 }
