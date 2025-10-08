@@ -27,15 +27,15 @@ class ResourceIndicator extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         // Background highlight effect
-        if (isHighlighted)
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: highlightColor.withOpacity(0.3 * highlightIntensity),
-              shape: BoxShape.circle,
-            ),
-          ),
+        // if (isHighlighted)
+        //   Container(
+        //     width: 50,
+        //     height: 50,
+        //     decoration: BoxDecoration(
+        //       color: highlightColor.withOpacity(0.3 * highlightIntensity),
+        //       shape: BoxShape.circle,
+        //     ),
+        //   ),
         
         Column(
           mainAxisSize: MainAxisSize.min,

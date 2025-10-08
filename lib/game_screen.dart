@@ -397,7 +397,7 @@ void dispose() {
                   'Money',
                   Icons.attach_money,
                   gameLogic.resources['money']!,
-                  Colors.green,
+                  const Color.fromARGB(255, 0, 129, 4),
                 ),
                 _buildResourceIndicatorWithHighlight(
                   'Reputation',

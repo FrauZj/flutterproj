@@ -34,31 +34,7 @@ class GameCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 40),
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-            //   children: [
-            //     Column(
-            //       children: [
-            //         const Icon(Icons.arrow_back, color: Colors.red),
-            //         const SizedBox(height: 8),
-            //         Text(
-            //           cardData['leftChoice'],
-            //           style: const TextStyle(color: Colors.red),
-            //         ),
-            //       ],
-            //     ),
-            //     Column(
-            //       children: [
-            //         const Icon(Icons.arrow_forward, color: Colors.green),
-            //         const SizedBox(height: 8),
-            //         Text(
-            //           cardData['rightChoice'],
-            //           style: const TextStyle(color: Colors.green),
-            //         ),
-            //       ],
-            //     ),
-            //   ],
-            // ),
+
           ],
         ),
       ),

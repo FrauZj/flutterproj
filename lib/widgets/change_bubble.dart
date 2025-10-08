@@ -19,8 +19,8 @@ class ChangeBubble extends StatelessWidget {
     
     // For significant changes, only scale changes
     final double bubbleSize = isSignificant 
-        ? 20 + (scale * 14)  // 20-40px range for significant changes
-        : 15 + (scale * 8); // 15-25px range for regular changes
+        ? 15 + (scale * 6) 
+        : 15 + (scale * 3); 
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8), // Space between bubble and progress bar
