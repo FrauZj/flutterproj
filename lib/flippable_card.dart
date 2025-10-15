@@ -102,16 +102,21 @@ class _FlippableCardState extends State<FlippableCard> with SingleTickerProvider
     );
   }
 
-  Widget _buildBackCard(double angle) {
-    return Transform(
-      transform: Matrix4.identity()..rotateY(angle > 1.57 ? 0 : 3.14159),
-      alignment: Alignment.center,
-      child: Opacity(
-        opacity: (_animation.value - 0.5) * 2,
+Widget _buildBackCard(double angle) {
+  return Transform(
+    transform: Matrix4.identity()..rotateY(angle > 1.57 ? 0 : 3.14159),
+    alignment: Alignment.center,
+    child: Opacity(
+      opacity: (_animation.value - 0.5) * 2,
+      child: Transform(
+        // Add this additional transform to flip the text back to normal
+        transform: Matrix4.identity()..rotateY(3.14159),
+        alignment: Alignment.center,
         child: _buildCardBackContent(),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCardFrontContent() {
     return Card(

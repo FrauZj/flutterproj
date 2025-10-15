@@ -97,7 +97,6 @@ Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int val
     child: Stack(
       alignment: Alignment.center,
       children: [
-        // Main resource indicator positioned at bottom
         Positioned(
           bottom: 0,
           child: ResourceIndicator(
@@ -367,7 +366,6 @@ void _startGameEndFade() {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GameApp'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -390,11 +388,11 @@ void _startGameEndFade() {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      _getGameOverIcon(),
-                      size: 80,
-                      color: Colors.white,
-                    ),
+                    // Icon(
+                    //   _getGameOverIcon(),
+                    //   size: 80,
+                    //   color: Colors.white,
+                    // ),
                     const SizedBox(height: 20),
                     Text(
                       _getGameOverMessage(),
@@ -433,18 +431,18 @@ void _startGameEndFade() {
     );
   }
 
-  IconData _getGameOverIcon() {
-    if (!_isGameOver) return Icons.error;
+  // IconData _getGameOverIcon() {
+  //   if (!_isGameOver) return Icons.error;
     
-    final gameOverCard = gameLogic.getGameOverCard()!;
-    final reason = gameOverCard['gameOverReason'];
+  //   final gameOverCard = gameLogic.getGameOverCard()!;
+  //   final reason = gameOverCard['gameOverReason'];
     
-    if (reason.toString().endsWith('_0')) {
-      return Icons.dangerous;
-    } else {
-      return Icons.emoji_events;
-    }
-  }
+  //   if (reason.toString().endsWith('_0')) {
+  //     return Icons.dangerous;
+  //   } else {
+  //     return Icons.emoji_events;
+  //   }
+  // }
 
   Widget _buildGameContent() {
     return Stack(
