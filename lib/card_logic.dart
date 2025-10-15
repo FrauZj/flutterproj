@@ -128,6 +128,82 @@ class CardLogic {
       'rightImpact': {'hunger': -10, 'sanity': -10, 'money': 0, 'reputation': 0},
       'type': 'random',
     },
+        {
+      'id': 100,
+      'text': 'You have starved to death. Your journey ends here.',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'hunger_0',
+    },
+    {
+      'id': 101,
+      'text': 'You have lost your mind completely. The darkness consumes you.',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'sanity_0',
+    },
+    {
+      'id': 102,
+      'text': 'You are completely bankrupt. Without resources, you cannot continue.',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'money_0',
+    },
+    {
+      'id': 103,
+      'text': 'Your reputation is completely destroyed. No one will help you now.',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'reputation_0',
+    },
+    
+    // Special achievement cards for each resource at 100
+    {
+      'id': 104,
+      'text': 'You have achieved perfect nourishment! But contentment makes you complacent...',
+      'leftChoice': 'Continue Journey',
+      'rightChoice': 'Keep Going',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'hunger_100',
+    },
+    {
+      'id': 105,
+      'text': 'Your mind has reached perfect clarity! But enlightenment separates you from this world...',
+      'leftChoice': 'New Path',
+      'rightChoice': 'Begin Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'sanity_100',
+    },
+    {
+      'id': 106,
+      'text': 'You have unimaginable wealth! But money cannot buy meaning in this journey...',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'money_100',
+    },
+    {
+      'id': 107,
+      'text': 'You are universally respected! But fame isolates you from authentic connections...',
+      'leftChoice': 'Try Again',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'game_over',
+      'gameOverReason': 'reputation_100',
+    },
   ];
 
   // Game state
@@ -244,7 +320,14 @@ class CardLogic {
     return false;
   }
 
-  void applyChoice(bool isLeftChoice) {
+ void applyChoice(bool isLeftChoice) {
+    // Check for game over condition before applying choice
+    final gameOverCard = getGameOverCard();
+    if (gameOverCard != null) {
+      // Don't process further if game is over
+      return;
+    }
+
     final card = currentCard;
     final impact = isLeftChoice ? card['leftImpact'] : card['rightImpact'];
     
@@ -273,9 +356,10 @@ class CardLogic {
       }
     }
     
-    // Check for game over
-    if (resources.values.any((value) => value <= 0)) {
-      score = day;
+    // Check for game over after applying choice
+    final newGameOverCard = getGameOverCard();
+    if (newGameOverCard != null) {
+      // Game over - don't increment day
       return;
     }
     
@@ -343,4 +427,24 @@ class CardLogic {
     
     _initializeQueues();
   }
+    Map<String, dynamic>? getGameOverCard() {
+    // Check for resource at 0
+    if (resources['hunger']! <= 0) return _getCardById(100);
+    if (resources['sanity']! <= 0) return _getCardById(101);
+    if (resources['money']! <= 0) return _getCardById(102);
+    if (resources['reputation']! <= 0) return _getCardById(103);
+    
+    // Check for resource at 100
+    if (resources['hunger']! >= 100) return _getCardById(104);
+    if (resources['sanity']! >= 100) return _getCardById(105);
+    if (resources['money']! >= 100) return _getCardById(106);
+    if (resources['reputation']! >= 100) return _getCardById(107);
+    
+    return null;
+  }
+
+  Map<String, dynamic> _getCardById(int id) {
+    return allCards.firstWhere((card) => card['id'] == id);
+  }
+  
 }
