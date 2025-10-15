@@ -3,9 +3,9 @@ import 'package:flutter/scheduler.dart';
 import 'card_logic.dart';
 import 'widgets/resource_indicator.dart';
 import 'widgets/game_card.dart';
-import 'widgets/game_over_card.dart';
 import 'flippable_card.dart';
 import 'widgets/change_bubble.dart';
+import 'fade_transition.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -25,6 +25,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _waitingForContinue = false;
   bool _resetFlip = false;
   bool _isProcessingChoice = false;
+  bool _isFadingOut = false;
+  bool _showGameOverBackground = false;
+  Color _gameOverBackgroundColor = Colors.black;
 
   Map<String, double> _leftChoiceHighlights = {};
   Map<String, double> _rightChoiceHighlights = {};
@@ -62,7 +65,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _calculateChoiceImpacts();
   }
 
+  bool get _isGameOver {
+    return gameLogic.getGameOverCard() != null;
+  }
 
+  Map<String, dynamic> get _effectiveCurrentCard {
+    final gameOverCard = gameLogic.getGameOverCard();
+    return gameOverCard ?? _currentCard;
+  }
 Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int value, Color color) {
   final isLeftHighlighted = _isHoveringLeft && _leftChoiceHighlights[title.toLowerCase()]! > 0;
   final isRightHighlighted = _isHoveringRight && _rightChoiceHighlights[title.toLowerCase()]! > 0;
@@ -138,6 +148,27 @@ void dispose() {
   _hoverController.dispose();
   super.dispose();
 }
+void _startGameEndFade() {
+    setState(() {
+      _isFadingOut = true;
+    });
+    
+    // Wait for fade out to complete, then show game over background and restart
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      setState(() {
+        _showGameOverBackground = true;
+      });
+      
+      // Wait a moment to show the game over background, then restart
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        _resetGame();
+        setState(() {
+          _isFadingOut = false;
+          _showGameOverBackground = false;
+        });
+      });
+    });
+  }
 
     void _onDragStart(DragStartDetails details) {
     if (_gameOver || _isProcessingChoice) return;
@@ -173,58 +204,81 @@ void dispose() {
     });
   }
 
-  void _onDragEnd(DragEndDetails details) {
-    if (_gameOver || _isProcessingChoice) return;
-    
-    setState(() {
-          _isDragging = false;
-          _isHoveringLeft = false;
-          _isHoveringRight = false;
-          _hoverController.reverse();
-    });
+ void _onDragEnd(DragEndDetails details) {
+  if (_isProcessingChoice) return;
+  
+  setState(() {
+    _isDragging = false;
+    _isHoveringLeft = false;
+    _isHoveringRight = false;
+    _hoverController.reverse();
+  });
 
-    if (_dragPosition.abs() > 100) {
-      _isProcessingChoice = true; // Prevent multiple triggers
+  if (_dragPosition.abs() > 100) {
+    _isProcessingChoice = true;
+    
+    if (_isGameOver && _currentCard['type'] == 'game_over') {
+      // We're already on a game over card - any swipe starts the fade out
+      _startGameEndFade();
+      return;
+    }
+    
+    if (_waitingForContinue) {
+      _proceedToNextCard();
+    } else {
+      final bool isLeftChoice = _dragPosition < 0;
+      final Map<String, dynamic> playedCard = _currentCard;
+      gameLogic.applyChoice(isLeftChoice);
       
-      if (_waitingForContinue) {
-        // This is a reply card swipe - any direction continues
-        _proceedToNextCard();
+      // Check if this choice caused a game over
+      if (_isGameOver) {
+        setState(() {
+          _currentCard = gameLogic.getGameOverCard()!;
+          _showReply = false;
+          _waitingForContinue = false;
+          _resetFlip = false;
+          _isProcessingChoice = false;
+        });
+        _resetCardPosition().then((_) {
+          _isProcessingChoice = false;
+        });
       } else {
-        // Normal card swipe
-        final bool isLeftChoice = _dragPosition < 0;
-        final Map<String, dynamic> playedCard = _currentCard;
-        gameLogic.applyChoice(isLeftChoice);
         _nextCard = gameLogic.currentCard;
         
-        if (gameLogic.score > 0) {
+        if (playedCard.containsKey('replyText') && playedCard['replyText'] != null) {
           setState(() {
-            _gameOver = true;
+            _waitingForContinue = true;
+            _showReply = true;
+          });
+          _resetCardPosition().then((_) {
             _isProcessingChoice = false;
           });
         } else {
-          if (playedCard.containsKey('replyText') && playedCard['replyText'] != null) {
-            setState(() {
-              _waitingForContinue = true;
-              _showReply = true;
-            });
-            // Reset position immediately when showing reply
-            _resetCardPosition().then((_) {
-              _isProcessingChoice = false;
-            });
-          } else {
-            _proceedToNextCard();
-          }
+          _proceedToNextCard();
         }
       }
-    } else {
-      _resetCardPosition().then((_) {
+    }
+  } else {
+    _resetCardPosition().then((_) {
+      _isProcessingChoice = false;
+    });
+  }
+}
+
+   void _proceedToNextCard() {
+  _resetCardPosition().then((_) {
+    // Check for game over before proceeding
+    if (_isGameOver && _currentCard['type'] != 'game_over') {
+      setState(() {
+        _currentCard = gameLogic.getGameOverCard()!;
+        _showReply = false;
+        _waitingForContinue = false;
+        _resetFlip = false;
         _isProcessingChoice = false;
       });
+      return;
     }
-  }
 
-  void _proceedToNextCard() {
-  _resetCardPosition().then((_) {
     if (_showReply) {
       setState(() {
         _resetFlip = true;
@@ -233,7 +287,7 @@ void dispose() {
       Future.delayed(const Duration(milliseconds: 600), () {
         setState(() {
           _currentCard = _nextCard;
-          _calculateChoiceImpacts(); // Recalculate for new card
+          _calculateChoiceImpacts();
           _showReply = false;
           _waitingForContinue = false;
           _resetFlip = false;
@@ -243,7 +297,7 @@ void dispose() {
     } else {
       setState(() {
         _currentCard = _nextCard;
-        _calculateChoiceImpacts(); // Recalculate for new card
+        _calculateChoiceImpacts();
         _showReply = false;
         _waitingForContinue = false;
         _isProcessingChoice = false;
@@ -264,6 +318,33 @@ void dispose() {
     // Flip to back complete
   }
 
+  String _getGameOverMessage() {
+    if (!_isGameOver) return '';
+    
+    final gameOverCard = gameLogic.getGameOverCard()!;
+    final reason = gameOverCard['gameOverReason'];
+    
+    switch (reason) {
+      case 'hunger_0':
+        return 'STARVATION';
+      case 'sanity_0':
+        return 'MADNESS';
+      case 'money_0':
+        return 'BANKRUPTCY';
+      case 'reputation_0':
+        return 'DISGRACE';
+      case 'hunger_100':
+        return 'SATIATION';
+      case 'sanity_100':
+        return 'ENLIGHTENMENT';
+      case 'money_100':
+        return 'WEALTH';
+      case 'reputation_100':
+        return 'FAME';
+      default:
+        return 'GAME OVER';
+    }
+  }
   void _resetGame() {
   setState(() {
     gameLogic.resetGame();
@@ -282,7 +363,7 @@ void dispose() {
   });
 }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -290,7 +371,7 @@ void dispose() {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (_gameOver)
+          if (_isGameOver && !_isFadingOut)
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _resetGame,
@@ -299,7 +380,77 @@ void dispose() {
       ),
       body: Stack(
         children: [
-          // Background deck of cards
+          // Game over background (shown after fade out)
+          if (_showGameOverBackground)
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: _gameOverBackgroundColor,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _getGameOverIcon(),
+                      size: 80,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      _getGameOverMessage(),
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Survived ${gameLogic.day} days',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Main game content with fade transition
+          if (!_showGameOverBackground)
+            FadeTransitionWrapper(
+              fadeIn: !_isFadingOut,
+              duration: const Duration(milliseconds: 1000),
+              child: _buildGameContent(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getGameOverIcon() {
+    if (!_isGameOver) return Icons.error;
+    
+    final gameOverCard = gameLogic.getGameOverCard()!;
+    final reason = gameOverCard['gameOverReason'];
+    
+    if (reason.toString().endsWith('_0')) {
+      return Icons.dangerous;
+    } else {
+      return Icons.emoji_events;
+    }
+  }
+
+  Widget _buildGameContent() {
+    return Stack(
+      children: [
+        // Background deck of cards (only show if not game over)
+        if (!_isGameOver) ...[
           Positioned(
             bottom: 150,
             left: MediaQuery.of(context).size.width / 2 - 100,
@@ -344,35 +495,35 @@ void dispose() {
               ),
             ),
           ),
-          
-          // Main card
-          Center(
-            child: GestureDetector(
-              onHorizontalDragStart: _onDragStart,
-              onHorizontalDragUpdate: _onDragUpdate,
-              onHorizontalDragEnd: _onDragEnd,
-              child: Transform.translate(
-                offset: Offset(_dragPosition, 0),
-                child: Transform.rotate(
-                  angle: _dragPosition * 0.001,
-                  child: SizedBox(
-                    width: 300,
-                    height: 400,
-                    child: _gameOver 
-                      ? GameOverCard(day: gameLogic.day, onReset: _resetGame)
-                      : FlippableCard(
-                          cardData: _currentCard,
-                          showReply: _showReply,
-                          resetFlip: _resetFlip,
-                          onFlipComplete: _onFlipComplete,
-                        ),
+        ],
+        
+        // Main card
+        Center(
+          child: GestureDetector(
+            onHorizontalDragStart: _onDragStart,
+            onHorizontalDragUpdate: _onDragUpdate,
+            onHorizontalDragEnd: _onDragEnd,
+            child: Transform.translate(
+              offset: Offset(_dragPosition, 0),
+              child: Transform.rotate(
+                angle: _dragPosition * 0.001,
+                child: SizedBox(
+                  width: 300,
+                  height: 400,
+                  child: FlippableCard(
+                    cardData: _effectiveCurrentCard,
+                    showReply: _showReply,
+                    resetFlip: _resetFlip,
+                    onFlipComplete: _onFlipComplete,
                   ),
                 ),
               ),
             ),
           ),
-          
-          // Resource indicators
+        ),
+        
+        // Resource indicators (only show if not game over)
+        if (!_isGameOver)
           Positioned(
             top: 10,
             left: 0,
@@ -408,8 +559,9 @@ void dispose() {
               ],
             ),
           ),
-          
-          // Day counter
+        
+        // Day counter (only show if not game over)
+        if (!_isGameOver)
           Positioned(
             top: 40,
             right: 20,
@@ -418,37 +570,56 @@ void dispose() {
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
-          
-          // Choice indicators
-          if (_isDragging && !_waitingForContinue && !_isProcessingChoice)
-            Positioned(
-              bottom: 100,
-              left: _dragPosition < 0 ? 50 : null,
-              right: _dragPosition > 0 ? 50 : null,
-              child: AnimatedOpacity(
-                opacity: _isDragging ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _dragPosition < 0 ? Colors.red : Colors.green,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _dragPosition < 0 
-                      ? _currentCard['leftChoice']
-                      : _currentCard['rightChoice'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+        
+        // Choice indicators (only show if not game over and not waiting for continue)
+        if (_isDragging && !_waitingForContinue && !_isProcessingChoice && !_isGameOver)
+          Positioned(
+            bottom: 100,
+            left: _dragPosition < 0 ? 50 : null,
+            right: _dragPosition > 0 ? 50 : null,
+            child: AnimatedOpacity(
+              opacity: _isDragging ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _dragPosition < 0 ? Colors.red : Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _dragPosition < 0 
+                    ? _currentCard['leftChoice']
+                    : _currentCard['rightChoice'],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-          
-          // Reply card indicator
-          if (_isDragging && _waitingForContinue && !_isProcessingChoice)
+          ),
+        
+        // Game over indicator (show when game over and not fading)
+        if (_isDragging && _isGameOver && !_isProcessingChoice && !_isFadingOut)
+          Positioned(
+            bottom: 100,
+            left: MediaQuery.of(context).size.width / 2 - 60,
+            child: AnimatedOpacity(
+              opacity: _isDragging ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        
+        // Reply card indicator (only show if not game over)
+        // In the build method, update the game over indicator section:
+          if (_isDragging && _isGameOver && _currentCard['type'] == 'game_over' && !_isProcessingChoice && !_isFadingOut)
             Positioned(
               bottom: 100,
               left: MediaQuery.of(context).size.width / 2 - 60,
@@ -458,22 +629,20 @@ void dispose() {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey,
+                    color: Colors.amber,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'Continue...',
-                    style: TextStyle(
-                      color: Colors.white,
+                  child: Text(
+                    _currentCard['leftChoice'], // Use the actual choice text from the game over card
+                    style: const TextStyle(
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
             ),
-        ],
-        
-      ),
+      ],
     );
   }
 }
