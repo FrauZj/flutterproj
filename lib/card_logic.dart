@@ -104,7 +104,7 @@ class CardLogic {
       'rightImpact': {'hunger': 0, 'sanity': -5, 'money': 0, 'reputation': 0},
       'type': 'side_story',
       'act': 1,
-      'storyOrder': 0,
+      'storyOrder': 1,
     },
     {
       'id': 9,
@@ -115,7 +115,7 @@ class CardLogic {
       'rightImpact': {'hunger': 0, 'sanity': 5, 'money': 0, 'reputation': -10},
       'type': 'side_story',
       'act': 2,
-      'storyOrder': 0,
+      'storyOrder': 2,
     },
     
     // Random events
@@ -396,7 +396,9 @@ class CardLogic {
         card['type'] == 'side_story' && card['act'] == currentAct).toList();
     sideStoryQueue.addAll(newSideStoryCards);
   }
-
+  Future<void> updateBestDaysSurvived() async {
+    
+  }
   void _refillMainQueue() {
     final randomCards = allCards.where((card) => 
         card['type'] == 'random' && !playedCards.contains(card['id'])).toList();

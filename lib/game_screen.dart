@@ -6,6 +6,8 @@ import 'widgets/game_card.dart';
 import 'flippable_card.dart';
 import 'widgets/change_bubble.dart';
 import 'fade_transition.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/preferences_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -28,6 +30,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _isFadingOut = false;
   bool _showGameOverBackground = false;
   Color _gameOverBackgroundColor = Colors.black;
+  int _bestDaysSurvived = 0;
+  bool _isNewRecord = false;
 
   Map<String, double> _leftChoiceHighlights = {};
   Map<String, double> _rightChoiceHighlights = {};
@@ -44,6 +48,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+     _loadBestDays();
     
     _animationController = AnimationController(
       vsync: this,
@@ -64,6 +69,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _nextCard = _currentCard;
     _calculateChoiceImpacts();
   }
+
+  void _loadBestDays() async {
+    final bestDays = await PreferencesService.getBestDaysSurvived();
+    setState(() {
+      _bestDaysSurvived = bestDays;
+    });
+  }
+
 
   bool get _isGameOver {
     return gameLogic.getGameOverCard() != null;
@@ -148,14 +161,24 @@ void dispose() {
   super.dispose();
 }
 void _startGameEndFade() {
+   final currentDays = gameLogic.day;
+    final isNewRecord = currentDays > _bestDaysSurvived;
+  
+  if (isNewRecord) {
+    PreferencesService.setBestDaysSurvived(currentDays);
+  }
     setState(() {
       _isFadingOut = true;
+      _isNewRecord = isNewRecord;
     });
     
     // Wait for fade out to complete, then show game over background and restart
     Future.delayed(const Duration(milliseconds: 1000), () {
       setState(() {
         _showGameOverBackground = true;
+          if (isNewRecord) {
+        _bestDaysSurvived = currentDays;
+        }
       });
       
       // Wait a moment to show the game over background, then restart
@@ -164,6 +187,7 @@ void _startGameEndFade() {
         setState(() {
           _isFadingOut = false;
           _showGameOverBackground = false;
+          _isNewRecord = false;
         });
       });
     });
@@ -358,7 +382,8 @@ void _startGameEndFade() {
     _isHoveringLeft = false;
     _isHoveringRight = false;
     _hoverController.reverse();
-    _calculateChoiceImpacts(); // Recalculate for new game
+    _calculateChoiceImpacts(); 
+    _isNewRecord = false; 
   });
 }
 
@@ -380,44 +405,63 @@ void _startGameEndFade() {
         children: [
           // Game over background (shown after fade out)
           if (_showGameOverBackground)
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: _gameOverBackgroundColor,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon(
-                    //   _getGameOverIcon(),
-                    //   size: 80,
-                    //   color: Colors.white,
-                    // ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _getGameOverMessage(),
-                      style: const TextStyle(
-                        fontSize: 32,
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: _gameOverBackgroundColor,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isNewRecord) ...[
+                    const Icon(
+                      Icons.emoji_events,
+                      size: 60,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'NEW RECORD!',
+                      style: TextStyle(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Colors.amber,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      'Survived ${gameLogic.day} days',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
                   ],
-                ),
+                  Text(
+                    _getGameOverMessage(),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Survived ${gameLogic.day} days',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Best: $_bestDaysSurvived days',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white54,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ],
               ),
             ),
+          ),
 
           // Main game content with fade transition
           if (!_showGameOverBackground)
