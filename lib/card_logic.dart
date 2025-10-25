@@ -4,19 +4,42 @@ class CardLogic {
     // Story cards (must happen in order, act-specific)
     {
       'id': 0,
-      'text': 'You wake up in the darkness...',
-      'leftChoice': 'so non chalant',
-      'rightChoice': 'ayo???',
-      'leftImpact': {'hunger': 20, 'sanity': -5, 'money': 0, 'reputation': 0},
-      'rightImpact': {'hunger': 15, 'sanity': 0, 'money': -15, 'reputation': 0},
+      'text': 'You wake up at the docks.',
+      'leftChoice': 'Wake up',
+      'rightChoice': 'Keep sleeping',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': -10, 'money': 0, 'reputation': 0},
       'type': 'story',
       'act': 1,
       'storyOrder': 0,
-      'replyText': 'The darkness seems to respond to your choice...', // Add this
+      // Choice-based reply texts
+      'leftReplyText': 'You feel well-rested.',
+      'rightReplyText': 'You decide to sleep a little longer...',
+      'conditionalNextCards': {
+        'rightChoice': 1001,
+      },
     },
     {
+      'id': 1001,
+      'text': 'You wake up at the docks. Even more tired than before.',
+      'leftChoice': 'Wake up',
+      'rightChoice': 'Sleep a little longer...',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'story',
+      'act': 1,
+      'storyOrder': 0,
+      // Choice-based reply texts
+      'leftReplyText': 'You feel like shit waking up after a long sleep...',
+      'rightReplyText': 'Sleeping feels good huh?',
+      'conditionalNextCards': {
+        'rightChoice': 0,
+      },
+    },
+    
+    {
       'id': 1,
-      'text': 'Wtf do you mean non chalant?',
+      'text': 'You see a vending machine, looming with its bright lights.',
       'leftChoice': 'ermm...',
       'rightChoice': 'shut up chud',
       'leftImpact': {'hunger': 0, 'sanity': -10, 'money': 5, 'reputation': -5},
@@ -24,6 +47,9 @@ class CardLogic {
       'type': 'story',
       'act': 1,
       'storyOrder': 1,
+      // Choice-based reply texts
+      'leftReplyText': 'You mutter something incoherent and move on.',
+      'rightReplyText': 'You confidently dismiss the machine.',
     },
     {
       'id': 2,
@@ -35,51 +61,11 @@ class CardLogic {
       'type': 'story',
       'act': 1,
       'storyOrder': 2,
+      // Choice-based reply texts
+      'leftReplyText': 'Silence speaks volumes.',
+      'rightReplyText': 'More silence follows.',
     },
-    
-    // Value-dependent cards (trigger based on resource conditions)
-    {
-      'id': 3,
-      'text': 'You are starving! You need to find food immediately.',
-      'leftChoice': 'Search for food',
-      'rightChoice': 'Ignore hunger',
-      'leftImpact': {'hunger': 30, 'sanity': -5, 'money': -10, 'reputation': 0},
-      'rightImpact': {'hunger': -20, 'sanity': -15, 'money': 0, 'reputation': 0},
-      'type': 'value',
-      'condition': {'hunger': 20}, // Triggers when hunger <= 20
-      'priority': 2,
-    },
-    {
-      'id': 4,
-      'text': 'You find a wallet on the street with money and ID. What do you do?',
-      'leftChoice': 'Return it to the owner',
-      'rightChoice': 'Keep the money',
-      'leftImpact': {'hunger': 0, 'sanity': 10, 'money': 0, 'reputation': 20},
-      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 50, 'reputation': -20},
-      'type': 'random',
-    },
-    {
-      'id': 5,
-      'text': 'A mysterious stranger offers you a deal...',
-      'leftChoice': 'Accept',
-      'rightChoice': 'Decline',
-      'leftImpact': {'hunger': 0, 'sanity': -20, 'money': 100, 'reputation': -10},
-      'rightImpact': {'hunger': 0, 'sanity': 5, 'money': 0, 'reputation': 5},
-      'type': 'secret',
-      'condition': {'money': 10}, // Triggers when money <= 10
-      'priority': 1,
-    },
-    {
-      'id': 6,
-      'text': 'Your reputation precedes you. People are watching...',
-      'leftChoice': 'Act confidently',
-      'rightChoice': 'Stay low',
-      'leftImpact': {'hunger': 0, 'sanity': 10, 'money': 0, 'reputation': 15},
-      'rightImpact': {'hunger': 0, 'sanity': -5, 'money': 0, 'reputation': -5},
-      'type': 'value',
-      'condition': {'reputation': 25}, // Triggers when reputation <= 25
-      'priority': 1,
-    },
+  
     
     // Act 2 story cards
     {
@@ -92,6 +78,9 @@ class CardLogic {
       'type': 'story',
       'act': 2,
       'storyOrder': 0,
+      // Choice-based reply texts
+      'leftReplyText': 'You venture into the unknown.',
+      'rightReplyText': 'You find a safe place to wait it out.',
     },
     
     // Side story cards (act-specific but can be interrupted)
@@ -105,6 +94,9 @@ class CardLogic {
       'type': 'side_story',
       'act': 1,
       'storyOrder': 1,
+      // Choice-based reply texts
+      'leftReplyText': 'You reconnect with an old acquaintance.',
+      'rightReplyText': 'You slip away unnoticed.',
     },
     {
       'id': 9,
@@ -116,19 +108,27 @@ class CardLogic {
       'type': 'side_story',
       'act': 2,
       'storyOrder': 2,
+      // Choice-based reply texts
+      'leftReplyText': 'You lean into your growing reputation.',
+      'rightReplyText': 'You try to set the record straight.',
     },
     
-    // Random events
+    // Random events (commented out as in original)
+    // {
+    //   'id': 10,
+    //   'text': 'A sudden rainstorm catches you unprepared.',
+    //   'leftChoice': 'Find shelter',
+    //   'rightChoice': 'Keep going',
+    //   'leftImpact': {'hunger': -5, 'sanity': 5, 'money': 0, 'reputation': 0},
+    //   'rightImpact': {'hunger': -10, 'sanity': -10, 'money': 0, 'reputation': 0},
+    //   'type': 'random',
+    //   // Choice-based reply texts
+    //   'leftReplyText': 'You find dry shelter until the storm passes.',
+    //   'rightReplyText': 'You get soaked but press onward.',
+    // },
+    
+    // Game over cards
     {
-      'id': 10,
-      'text': 'A sudden rainstorm catches you unprepared.',
-      'leftChoice': 'Find shelter',
-      'rightChoice': 'Keep going',
-      'leftImpact': {'hunger': -5, 'sanity': 5, 'money': 0, 'reputation': 0},
-      'rightImpact': {'hunger': -10, 'sanity': -10, 'money': 0, 'reputation': 0},
-      'type': 'random',
-    },
-        {
       'id': 100,
       'text': 'You have starved to death. Your journey ends here.',
       'leftChoice': 'Try Again',
@@ -212,6 +212,9 @@ class CardLogic {
   int day = 1;
   int currentAct = 1;
   
+  int? _forcedNextCardId;
+  bool _hasForcedNextCard = false;
+
   Map<String, int> resources = {
     'hunger': 50,
     'sanity': 50,
@@ -263,7 +266,7 @@ class CardLogic {
     priorityQueue.addAll(valueCards);
     priorityQueue.addAll(secretCards);
 
-    // Fill main queue with random cards
+    // Fill main queue with random cards (but they won't appear until first 5 cards are played)
     mainQueue.addAll(randomCards);
     
     // Shuffle main queue for randomness
@@ -282,10 +285,32 @@ class CardLogic {
         'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
       };
     }
-    return mainQueue.isNotEmpty ? mainQueue[0] : _getNextAvailableCard();
+    
+    // Check if we should show random cards (only after first 5 cards)
+    if (mainQueue.isNotEmpty && _shouldShowRandomCards()) {
+      return mainQueue[0];
+    }
+    
+    return _getNextAvailableCard();
+  }
+
+  bool _shouldShowRandomCards() {
+    // Don't show random cards until at least 5 cards have been played
+    return playedCards.length >= 5;
   }
 
   Map<String, dynamic> _getNextAvailableCard() {
+    // Check for forced next card first
+    if (_hasForcedNextCard && _forcedNextCardId != null) {
+      final forcedCard = _getCardById(_forcedNextCardId!);
+      if (!playedCards.contains(forcedCard['id'])) {
+        // Reset the forced card flag after using it
+        _hasForcedNextCard = false;
+        _forcedNextCardId = null;
+        return forcedCard;
+      }
+    }
+
     // Check priority queue first (emergency/value-dependent cards)
     for (var card in priorityQueue) {
       if (!playedCards.contains(card['id']) && _meetsCondition(card)) {
@@ -320,11 +345,22 @@ class CardLogic {
     return false;
   }
 
- void applyChoice(bool isLeftChoice) {
+  // Helper method to get the appropriate reply text based on choice
+  String getReplyText(Map<String, dynamic> card, bool isLeftChoice) {
+    if (isLeftChoice && card.containsKey('leftReplyText')) {
+      return card['leftReplyText'];
+    } else if (!isLeftChoice && card.containsKey('rightReplyText')) {
+      return card['rightReplyText'];
+    }
+    
+    // Fallback to generic reply text or original replyText field
+    return card['replyText'] ?? 'The story continues...';
+  }
+
+  void applyChoice(bool isLeftChoice) {
     // Check for game over condition before applying choice
     final gameOverCard = getGameOverCard();
     if (gameOverCard != null) {
-      // Don't process further if game is over
       return;
     }
 
@@ -338,6 +374,17 @@ class CardLogic {
         resources[key] = (value + impactValue).clamp(0, 100);
       }
     });
+    
+    // Check for conditional next card
+    if (card.containsKey('conditionalNextCards')) {
+      final conditionals = card['conditionalNextCards'] as Map<String, dynamic>;
+      final choiceKey = isLeftChoice ? 'leftChoice' : 'rightChoice';
+      
+      if (conditionals.containsKey(choiceKey)) {
+        _forcedNextCardId = conditionals[choiceKey] as int;
+        _hasForcedNextCard = true;
+      }
+    }
     
     // Mark card as played
     playedCards.add(card['id']);
@@ -359,7 +406,6 @@ class CardLogic {
     // Check for game over after applying choice
     final newGameOverCard = getGameOverCard();
     if (newGameOverCard != null) {
-      // Game over - don't increment day
       return;
     }
     
@@ -396,9 +442,7 @@ class CardLogic {
         card['type'] == 'side_story' && card['act'] == currentAct).toList();
     sideStoryQueue.addAll(newSideStoryCards);
   }
-  Future<void> updateBestDaysSurvived() async {
-    
-  }
+
   void _refillMainQueue() {
     final randomCards = allCards.where((card) => 
         card['type'] == 'random' && !playedCards.contains(card['id'])).toList();
@@ -421,6 +465,9 @@ class CardLogic {
     
     playedCards.clear();
     storyProgress = {'act1': 0, 'act2': 0};
+
+    _forcedNextCardId = null;
+    _hasForcedNextCard = false;
     
     mainQueue.clear();
     priorityQueue.clear();
@@ -429,7 +476,8 @@ class CardLogic {
     
     _initializeQueues();
   }
-    Map<String, dynamic>? getGameOverCard() {
+
+  Map<String, dynamic>? getGameOverCard() {
     // Check for resource at 0
     if (resources['hunger']! <= 0) return _getCardById(100);
     if (resources['sanity']! <= 0) return _getCardById(101);
@@ -448,5 +496,4 @@ class CardLogic {
   Map<String, dynamic> _getCardById(int id) {
     return allCards.firstWhere((card) => card['id'] == id);
   }
-  
 }
