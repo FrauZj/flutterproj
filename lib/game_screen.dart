@@ -314,47 +314,47 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _proceedToNextCard() {
-    _resetCardPosition().then((_) {
-      // Check for game over before proceeding
-      if (_isGameOver && _currentCard['type'] != 'game_over') {
-        setState(() {
-          _currentCard = gameLogic.getGameOverCard()!;
-          _showReply = false;
-          _waitingForContinue = false;
-          _resetFlip = false;
-          _isProcessingChoice = false;
-        });
-        return;
-      }
+  _resetCardPosition().then((_) {
+    // Check for game over before proceeding
+    if (_isGameOver && _currentCard['type'] != 'game_over') {
+      setState(() {
+        _currentCard = gameLogic.getGameOverCard()!;
+        _showReply = false;
+        _waitingForContinue = false;
+        _resetFlip = false;
+        _isProcessingChoice = false;
+      });
+      return;
+    }
 
-      if (_showReply) {
-        setState(() {
-          _resetFlip = true;
-        });
-        
-        Future.delayed(const Duration(milliseconds: 600), () {
-          setState(() {
-            _currentCard = gameLogic.currentCard;
-            _calculateChoiceImpacts();
-            _showReply = false;
-            _waitingForContinue = false;
-            _resetFlip = false;
-            _isProcessingChoice = false;
-            _lastChoiceIsLeft = null; // Reset choice
-          });
-        });
-      } else {
+    if (_showReply) {
+      setState(() {
+        _resetFlip = true;
+      });
+      
+      Future.delayed(const Duration(milliseconds: 600), () {
         setState(() {
           _currentCard = gameLogic.currentCard;
           _calculateChoiceImpacts();
           _showReply = false;
           _waitingForContinue = false;
+          _resetFlip = false;
           _isProcessingChoice = false;
           _lastChoiceIsLeft = null; // Reset choice
         });
-      }
-    });
-  }
+      });
+    } else {
+      setState(() {
+        _currentCard = gameLogic.currentCard;
+        _calculateChoiceImpacts();
+        _showReply = false;
+        _waitingForContinue = false;
+        _isProcessingChoice = false;
+        _lastChoiceIsLeft = null; // Reset choice
+      });
+    }
+  });
+}
 
   Future<void> _resetCardPosition() {
     return _animationController.forward(from: 0.0).then((_) {

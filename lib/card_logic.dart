@@ -16,40 +16,67 @@ class CardLogic {
       'leftReplyText': 'You feel well-rested.',
       'rightReplyText': 'You decide to sleep a little longer...',
       'conditionalNextCards': {
-        'rightChoice': 1001,
+        'rightChoice': 1001, // This will interrupt story flow
       },
     },
     {
       'id': 1001,
       'text': 'You wake up at the docks. Even more tired than before.',
       'leftChoice': 'Wake up',
-      'rightChoice': 'Sleep a little longer...',
+      'rightChoice': 'Wake up',
       'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
       'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
-      'type': 'story',
+      'type': 'side_story', // This is now invoked by conditional
       'act': 1,
-      'storyOrder': 0,
       // Choice-based reply texts
       'leftReplyText': 'You feel like shit waking up after a long sleep...',
-      'rightReplyText': 'Sleeping feels good huh?',
-      'conditionalNextCards': {
-        'rightChoice': 0,
-      },
+      'rightReplyText': 'You feel like shit waking up after a long sleep...',
+      // No conditionalNextCards, so story will resume after this
     },
     
     {
       'id': 1,
       'text': 'You see a vending machine, looming with its bright lights.',
-      'leftChoice': 'ermm...',
-      'rightChoice': 'shut up chud',
-      'leftImpact': {'hunger': 0, 'sanity': -10, 'money': 5, 'reputation': -5},
-      'rightImpact': {'hunger': 0, 'sanity': 15, 'money': -20, 'reputation': 10},
+      'leftChoice': 'Come closer',
+      'rightChoice': 'Ignore',
+      'leftImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
       'type': 'story',
       'act': 1,
       'storyOrder': 1,
       // Choice-based reply texts
       'leftReplyText': 'You mutter something incoherent and move on.',
       'rightReplyText': 'You confidently dismiss the machine.',
+      'conditionalNextCards': {
+        'leftChoice': 1002, // This will interrupt story flow
+      },
+    },
+    {
+      'id': 1002,
+      'text': 'Vending machine buzzes at you.',
+      'leftChoice': 'Buy a can of soda',
+      'rightChoice': 'Walk away',
+      'leftImpact': {'hunger': 5, 'sanity': 20, 'money': -10, 'reputation': 0},
+      'rightImpact': {'hunger': 0, 'sanity': 0, 'money': 0, 'reputation': 0},
+      'type': 'side_story', // This is now invoked by conditional
+      'act': 1,
+      // Choice-based reply texts
+      'leftReplyText': 'You take a sip from the can you just bought. It feels refreshing.',
+      // This side story has its own conditional chain
+      'conditionalNextCards': {
+        'leftChoice': 1003,
+      },
+    },
+    {
+      'id': 1003,
+      'text': 'The soda was surprisingly good. You feel energized.',
+      'leftChoice': 'Continue',
+      'rightChoice': 'Continue',
+      'leftImpact': {'hunger': 5, 'sanity': 10, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': 5, 'sanity': 10, 'money': 0, 'reputation': 0},
+      'type': 'side_story',
+      'act': 1,
+      // No more conditionals, so story will resume after this
     },
     {
       'id': 2,
@@ -66,7 +93,6 @@ class CardLogic {
       'rightReplyText': 'More silence follows.',
     },
   
-    
     // Act 2 story cards
     {
       'id': 7,
@@ -83,49 +109,19 @@ class CardLogic {
       'rightReplyText': 'You find a safe place to wait it out.',
     },
     
-    // Side story cards (act-specific but can be interrupted)
+    // Random events 
     {
-      'id': 8,
-      'text': 'A familiar face appears in the crowd...',
-      'leftChoice': 'Approach',
-      'rightChoice': 'Avoid',
-      'leftImpact': {'hunger': 0, 'sanity': 10, 'money': -5, 'reputation': 5},
-      'rightImpact': {'hunger': 0, 'sanity': -5, 'money': 0, 'reputation': 0},
-      'type': 'side_story',
-      'act': 1,
-      'storyOrder': 1,
+      'id': 10,
+      'text': 'A sudden rainstorm catches you unprepared.',
+      'leftChoice': 'Find shelter',
+      'rightChoice': 'Keep going',
+      'leftImpact': {'hunger': -5, 'sanity': 5, 'money': 0, 'reputation': 0},
+      'rightImpact': {'hunger': -10, 'sanity': -10, 'money': 0, 'reputation': 0},
+      'type': 'random',
       // Choice-based reply texts
-      'leftReplyText': 'You reconnect with an old acquaintance.',
-      'rightReplyText': 'You slip away unnoticed.',
+      'leftReplyText': 'You find dry shelter until the storm passes.',
+      'rightReplyText': 'You get soaked but press onward.',
     },
-    {
-      'id': 9,
-      'text': 'Rumors spread about your actions...',
-      'leftChoice': 'Embrace it',
-      'rightChoice': 'Deny everything',
-      'leftImpact': {'hunger': 0, 'sanity': -5, 'money': 0, 'reputation': 20},
-      'rightImpact': {'hunger': 0, 'sanity': 5, 'money': 0, 'reputation': -10},
-      'type': 'side_story',
-      'act': 2,
-      'storyOrder': 2,
-      // Choice-based reply texts
-      'leftReplyText': 'You lean into your growing reputation.',
-      'rightReplyText': 'You try to set the record straight.',
-    },
-    
-    // Random events (commented out as in original)
-    // {
-    //   'id': 10,
-    //   'text': 'A sudden rainstorm catches you unprepared.',
-    //   'leftChoice': 'Find shelter',
-    //   'rightChoice': 'Keep going',
-    //   'leftImpact': {'hunger': -5, 'sanity': 5, 'money': 0, 'reputation': 0},
-    //   'rightImpact': {'hunger': -10, 'sanity': -10, 'money': 0, 'reputation': 0},
-    //   'type': 'random',
-    //   // Choice-based reply texts
-    //   'leftReplyText': 'You find dry shelter until the storm passes.',
-    //   'rightReplyText': 'You get soaked but press onward.',
-    // },
     
     // Game over cards
     {
@@ -212,8 +208,9 @@ class CardLogic {
   int day = 1;
   int currentAct = 1;
   
-  int? _forcedNextCardId;
-  bool _hasForcedNextCard = false;
+  // NEW: Track conditional card chain
+  List<int> _conditionalCardChain = [];
+  bool get _isInConditionalChain => _conditionalCardChain.isNotEmpty;
 
   Map<String, int> resources = {
     'hunger': 50,
@@ -226,11 +223,10 @@ class CardLogic {
   List<Map<String, dynamic>> mainQueue = [];
   List<Map<String, dynamic>> priorityQueue = [];
   List<Map<String, dynamic>> storyQueue = [];
-  List<Map<String, dynamic>> sideStoryQueue = [];
   
   // Track which cards have been played
   Set<int> playedCards = {};
-  Map<String, int> storyProgress = {'act1': 0, 'act2': 0}; // Track story progress per act
+  Map<String, int> storyProgress = {'act1': 0, 'act2': 0};
 
   CardLogic() {
     _initializeQueues();
@@ -239,7 +235,6 @@ class CardLogic {
   void _initializeQueues() {
     // Separate cards by type
     final storyCards = allCards.where((card) => card['type'] == 'story').toList();
-    final sideStoryCards = allCards.where((card) => card['type'] == 'side_story').toList();
     final valueCards = allCards.where((card) => card['type'] == 'value').toList();
     final randomCards = allCards.where((card) => card['type'] == 'random').toList();
     final secretCards = allCards.where((card) => card['type'] == 'secret').toList();
@@ -250,32 +245,20 @@ class CardLogic {
       return a['storyOrder'].compareTo(b['storyOrder']);
     });
 
-    // Sort side story cards by act and order
-    sideStoryCards.sort((a, b) {
-      if (a['act'] != b['act']) return a['act'].compareTo(b['act']);
-      return a['storyOrder'].compareTo(b['storyOrder']);
-    });
-
     // Add current act story cards to story queue
     storyQueue.addAll(storyCards.where((card) => card['act'] == currentAct));
-    
-    // Add current act side story cards to side story queue
-    sideStoryQueue.addAll(sideStoryCards.where((card) => card['act'] == currentAct));
 
-    // Add value and secret cards to priority queue (they'll be checked each turn)
+    // Add value and secret cards to priority queue
     priorityQueue.addAll(valueCards);
     priorityQueue.addAll(secretCards);
 
-    // Fill main queue with random cards (but they won't appear until first 5 cards are played)
+    // Fill main queue with random cards
     mainQueue.addAll(randomCards);
-    
-    // Shuffle main queue for randomness
     mainQueue.shuffle();
   }
 
   Map<String, dynamic> get currentCard {
-    if (mainQueue.isEmpty && storyQueue.isEmpty && sideStoryQueue.isEmpty) {
-      // If no cards left, return a default game over card
+    if (mainQueue.isEmpty && storyQueue.isEmpty && !_isInConditionalChain) {
       return {
         'id': -1,
         'text': 'You have experienced all events. The journey continues...',
@@ -286,51 +269,47 @@ class CardLogic {
       };
     }
     
-    // Check if we should show random cards (only after first 5 cards)
-    if (mainQueue.isNotEmpty && _shouldShowRandomCards()) {
-      return mainQueue[0];
-    }
-    
     return _getNextAvailableCard();
   }
 
-  bool _shouldShowRandomCards() {
-    // Don't show random cards until at least 5 cards have been played
-    return playedCards.length >= 5;
-  }
-
   Map<String, dynamic> _getNextAvailableCard() {
-    // Check for forced next card first
-    if (_hasForcedNextCard && _forcedNextCardId != null) {
-      final forcedCard = _getCardById(_forcedNextCardId!);
-      if (!playedCards.contains(forcedCard['id'])) {
-        // Reset the forced card flag after using it
-        _hasForcedNextCard = false;
-        _forcedNextCardId = null;
-        return forcedCard;
+    // 1. Check conditional chain first (highest priority)
+    if (_isInConditionalChain) {
+      final nextCardId = _conditionalCardChain.first;
+      final conditionalCard = _getCardById(nextCardId);
+      if (!playedCards.contains(conditionalCard['id'])) {
+        return conditionalCard;
+      } else {
+        // If conditional card was already played, remove from chain and continue
+        _conditionalCardChain.removeAt(0);
+        return _getNextAvailableCard();
       }
     }
 
-    // Check priority queue first (emergency/value-dependent cards)
+    // 2. Check priority queue (emergency/value-dependent cards)
     for (var card in priorityQueue) {
       if (!playedCards.contains(card['id']) && _meetsCondition(card)) {
         return card;
       }
     }
 
-    // Check story queue next
+    // 3. Check story queue next
     if (storyQueue.isNotEmpty) {
       return storyQueue[0];
     }
 
-    // Check side story queue
-    if (sideStoryQueue.isNotEmpty) {
-      return sideStoryQueue[0];
+    // 4. Check random cards (only after first 5 cards)
+    if (mainQueue.isNotEmpty && _shouldShowRandomCards()) {
+      return mainQueue[0];
     }
 
-    // Fallback to first available card
+    // Fallback
     return allCards.firstWhere((card) => !playedCards.contains(card['id']), 
         orElse: () => allCards[0]);
+  }
+
+  bool _shouldShowRandomCards() {
+    return playedCards.length >= 5;
   }
 
   bool _meetsCondition(Map<String, dynamic> card) {
@@ -345,7 +324,6 @@ class CardLogic {
     return false;
   }
 
-  // Helper method to get the appropriate reply text based on choice
   String getReplyText(Map<String, dynamic> card, bool isLeftChoice) {
     if (isLeftChoice && card.containsKey('leftReplyText')) {
       return card['leftReplyText'];
@@ -353,7 +331,6 @@ class CardLogic {
       return card['rightReplyText'];
     }
     
-    // Fallback to generic reply text or original replyText field
     return card['replyText'] ?? 'The story continues...';
   }
 
@@ -375,25 +352,30 @@ class CardLogic {
       }
     });
     
-    // Check for conditional next card
+    // Handle conditional next cards - add to chain
     if (card.containsKey('conditionalNextCards')) {
       final conditionals = card['conditionalNextCards'] as Map<String, dynamic>;
       final choiceKey = isLeftChoice ? 'leftChoice' : 'rightChoice';
       
       if (conditionals.containsKey(choiceKey)) {
-        _forcedNextCardId = conditionals[choiceKey] as int;
-        _hasForcedNextCard = true;
+        final nextCardId = conditionals[choiceKey] as int;
+        _conditionalCardChain.add(nextCardId);
       }
     }
     
     // Mark card as played
     playedCards.add(card['id']);
     
-    // Remove card from appropriate queue
+    // If this card was from conditional chain, remove it from chain
+    if (_isInConditionalChain && _conditionalCardChain.first == card['id']) {
+      _conditionalCardChain.removeAt(0);
+    }
+    
+    // Remove card from appropriate queues (if it was in any queue)
     _removeCardFromQueues(card);
     
-    // Update story progress for story cards
-    if (card['type'] == 'story') {
+    // Update story progress for story cards (only if not in conditional chain)
+    if (card['type'] == 'story' && !_isInConditionalChain) {
       storyProgress['act$currentAct'] = storyProgress['act$currentAct']! + 1;
       
       // Check if we should advance to next act
@@ -421,26 +403,18 @@ class CardLogic {
     mainQueue.removeWhere((c) => c['id'] == card['id']);
     priorityQueue.removeWhere((c) => c['id'] == card['id']);
     storyQueue.removeWhere((c) => c['id'] == card['id']);
-    sideStoryQueue.removeWhere((c) => c['id'] == card['id']);
   }
 
   bool _shouldAdvanceAct() {
-    // Advance act when all main story cards for current act are completed
     final actStoryCards = allCards.where((card) => 
         card['type'] == 'story' && card['act'] == currentAct).length;
     return storyProgress['act$currentAct']! >= actStoryCards;
   }
 
   void _updateQueuesForNewAct() {
-    // Add new act's story cards to story queue
     final newStoryCards = allCards.where((card) => 
         card['type'] == 'story' && card['act'] == currentAct).toList();
     storyQueue.addAll(newStoryCards);
-
-    // Add new act's side story cards to side story queue
-    final newSideStoryCards = allCards.where((card) => 
-        card['type'] == 'side_story' && card['act'] == currentAct).toList();
-    sideStoryQueue.addAll(newSideStoryCards);
   }
 
   void _refillMainQueue() {
@@ -466,13 +440,12 @@ class CardLogic {
     playedCards.clear();
     storyProgress = {'act1': 0, 'act2': 0};
 
-    _forcedNextCardId = null;
-    _hasForcedNextCard = false;
+    // NEW: Clear conditional chain
+    _conditionalCardChain.clear();
     
     mainQueue.clear();
     priorityQueue.clear();
     storyQueue.clear();
-    sideStoryQueue.clear();
     
     _initializeQueues();
   }
