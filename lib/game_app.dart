@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'game_screen.dart';
+import 'main_menu.dart'; 
+import 'leaderboard_screen.dart';
 
 class GameApp extends StatelessWidget {
   const GameApp({super.key});
@@ -7,7 +8,7 @@ class GameApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GameApp',
+      title: 'The Lost',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFF121212),
@@ -17,7 +18,7 @@ class GameApp extends StatelessWidget {
           titleLarge: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
         ),
       ),
-      home: const GameScreen(),
+      home: const MainMenu(),
     );
   }
 }
