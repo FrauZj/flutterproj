@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'card_logic.dart';
+import 'card/card_logic.dart';
 
 class AnimatedContainerExample extends StatefulWidget {
   const AnimatedContainerExample({super.key});
