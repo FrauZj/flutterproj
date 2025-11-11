@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'card_logic.dart';
-import 'widgets/resource_indicator.dart';
-import 'widgets/game_card.dart';
-import 'flippable_card.dart';
-import 'widgets/change_bubble.dart';
-import 'fade_transition.dart';
+import '../card/card_logic.dart';
+import '../widgets/resource_indicator.dart';
+import '../widgets/game_card.dart';
+import '../card/flippable_card.dart';
+import '../widgets/change_bubble.dart';
+import '../card/fade_transition.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/preferences_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -14,7 +16,7 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin { // Changed this line
+class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final CardLogic gameLogic = CardLogic();
   late AnimationController _animationController;
   double _dragPosition = 0.0;
@@ -28,6 +30,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _isFadingOut = false;
   bool _showGameOverBackground = false;
   Color _gameOverBackgroundColor = Colors.black;
+  int _bestDaysSurvived = 0;
+  bool _isNewRecord = false;
 
   Map<String, double> _leftChoiceHighlights = {};
   Map<String, double> _rightChoiceHighlights = {};
@@ -40,10 +44,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   
   Map<String, dynamic> _currentCard = {};
   Map<String, dynamic> _nextCard = {};
+  
+  // Track the last choice to get the correct reply text
+  bool? _lastChoiceIsLeft;
 
   @override
   void initState() {
     super.initState();
+     _loadBestDays();
     
     _animationController = AnimationController(
       vsync: this,
@@ -65,98 +73,131 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _calculateChoiceImpacts();
   }
 
+  void _loadBestDays() async {
+    final bestDays = await PreferencesService.getBestDaysSurvived();
+    setState(() {
+      _bestDaysSurvived = bestDays;
+    });
+  }
+
   bool get _isGameOver {
     return gameLogic.getGameOverCard() != null;
   }
 
+  // Get the effective current card with proper reply text
   Map<String, dynamic> get _effectiveCurrentCard {
     final gameOverCard = gameLogic.getGameOverCard();
-    return gameOverCard ?? _currentCard;
+    if (gameOverCard != null) {
+      return gameOverCard;
+    }
+    
+    // For regular cards, create a copy with the appropriate reply text
+    final card = _currentCard;
+    if (_showReply && _lastChoiceIsLeft != null) {
+      final cardWithReply = Map<String, dynamic>.from(card);
+      cardWithReply['replyText'] = gameLogic.getReplyText(card, _lastChoiceIsLeft!);
+      return cardWithReply;
+    }
+    
+    return card;
   }
-Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int value, Color color) {
-  final isLeftHighlighted = _isHoveringLeft && _leftChoiceHighlights[title.toLowerCase()]! > 0;
-  final isRightHighlighted = _isHoveringRight && _rightChoiceHighlights[title.toLowerCase()]! > 0;
-  
-  Color highlightColor = Colors.transparent;
-  double highlightIntensity = 0.0;
-  int changeAmount = 0;
-  
-  if (isLeftHighlighted) {
-    changeAmount = _leftChoiceChanges[title.toLowerCase()]!;
-    highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
-    highlightIntensity = _leftChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
-  } else if (isRightHighlighted) {
-    changeAmount = _rightChoiceChanges[title.toLowerCase()]!;
-    highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
-    highlightIntensity = _rightChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
-  }
-  
-  return SizedBox(
-    width: 50, // Fixed width to prevent layout shifts
-    height: 100, // Fixed height to accommodate bubble + indicator
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        // Main resource indicator positioned at bottom
-        Positioned(
-          bottom: 0,
-          child: ResourceIndicator(
-            title: title,
-            icon: icon,
-            value: value,
-            color: color,
-            isHighlighted: isLeftHighlighted || isRightHighlighted,
-            highlightColor: highlightColor,
-            highlightIntensity: highlightIntensity,
-          ),
-        ),
-        
-        // Change bubble positioned above the indicator
-        if ((isLeftHighlighted || isRightHighlighted) && changeAmount.abs() > 0)
+
+  Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int value, Color color) {
+    final isLeftHighlighted = _isHoveringLeft && _leftChoiceHighlights[title.toLowerCase()]! > 0;
+    final isRightHighlighted = _isHoveringRight && _rightChoiceHighlights[title.toLowerCase()]! > 0;
+    
+    Color highlightColor = Colors.transparent;
+    double highlightIntensity = 0.0;
+    int changeAmount = 0;
+    
+    if (isLeftHighlighted) {
+      changeAmount = _leftChoiceChanges[title.toLowerCase()]!;
+      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
+      highlightIntensity = _leftChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
+    } else if (isRightHighlighted) {
+      changeAmount = _rightChoiceChanges[title.toLowerCase()]!;
+      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
+      highlightIntensity = _rightChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
+    }
+    
+    return SizedBox(
+      width: 50, // Fixed width to prevent layout shifts
+      height: 100, // Fixed height to accommodate bubble + indicator
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
           Positioned(
-            top: 0, // Position at the top of the container
-            child: ChangeBubble(
-              changeAmount: changeAmount,
-              isPositive: changeAmount >= 0,
-              scale: highlightIntensity,
+            bottom: 0,
+            child: ResourceIndicator(
+              title: title,
+              icon: icon,
+              value: value,
+              color: color,
+              isHighlighted: isLeftHighlighted || isRightHighlighted,
+              highlightColor: highlightColor,
+              highlightIntensity: highlightIntensity,
             ),
           ),
-      ],
-    ),
-  );
-}
+          
+          // Change bubble positioned above the indicator
+          if ((isLeftHighlighted || isRightHighlighted) && changeAmount.abs() > 0)
+            Positioned(
+              top: 0, // Position at the top of the container
+              child: ChangeBubble(
+                changeAmount: changeAmount,
+                isPositive: changeAmount >= 0,
+                scale: highlightIntensity,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _calculateChoiceImpacts() {
-  final leftImpact = _currentCard['leftImpact'] as Map<String, int>;
-  final rightImpact = _currentCard['rightImpact'] as Map<String, int>;
-  
-  _leftChoiceHighlights = {};
-  _rightChoiceHighlights = {};
-  _leftChoiceChanges = leftImpact;
-  _rightChoiceChanges = rightImpact;
-  
-  // Calculate highlight intensities based on impact magnitude
-  leftImpact.forEach((resource, change) {
-    _leftChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
-  });
-  
-  rightImpact.forEach((resource, change) {
-    _rightChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
-  });
-}
+    final leftImpact = _currentCard['leftImpact'] as Map<String, int>;
+    final rightImpact = _currentCard['rightImpact'] as Map<String, int>;
+    
+    _leftChoiceHighlights = {};
+    _rightChoiceHighlights = {};
+    _leftChoiceChanges = leftImpact;
+    _rightChoiceChanges = rightImpact;
+    
+    // Calculate highlight intensities based on impact magnitude
+    leftImpact.forEach((resource, change) {
+      _leftChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
+    });
+    
+    rightImpact.forEach((resource, change) {
+      _rightChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
+    });
+  }
+
   @override
-void dispose() {
-  _hoverController.dispose();
-  super.dispose();
-}
-void _startGameEndFade() {
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  void _startGameEndFade() {
+    final currentDays = gameLogic.day;
+    final isNewRecord = currentDays > _bestDaysSurvived;
+  
+    if (isNewRecord) {
+      PreferencesService.setBestDaysSurvived(currentDays);
+    }
     setState(() {
       _isFadingOut = true;
+      _isNewRecord = isNewRecord;
     });
     
     // Wait for fade out to complete, then show game over background and restart
     Future.delayed(const Duration(milliseconds: 1000), () {
       setState(() {
         _showGameOverBackground = true;
+        if (isNewRecord) {
+          _bestDaysSurvived = currentDays;
+        }
       });
       
       // Wait a moment to show the game over background, then restart
@@ -165,12 +206,13 @@ void _startGameEndFade() {
         setState(() {
           _isFadingOut = false;
           _showGameOverBackground = false;
+          _isNewRecord = false;
         });
       });
     });
   }
 
-    void _onDragStart(DragStartDetails details) {
+  void _onDragStart(DragStartDetails details) {
     if (_gameOver || _isProcessingChoice) return;
     setState(() {
       _isDragging = true;
@@ -204,68 +246,74 @@ void _startGameEndFade() {
     });
   }
 
- void _onDragEnd(DragEndDetails details) {
-  if (_isProcessingChoice) return;
-  
-  setState(() {
-    _isDragging = false;
-    _isHoveringLeft = false;
-    _isHoveringRight = false;
-    _hoverController.reverse();
-  });
+  void _onDragEnd(DragEndDetails details) {
+    if (_isProcessingChoice) return;
+    
+    setState(() {
+      _isDragging = false;
+      _isHoveringLeft = false;
+      _isHoveringRight = false;
+      _hoverController.reverse();
+    });
 
-  if (_dragPosition.abs() > 100) {
-    _isProcessingChoice = true;
-    
-    if (_isGameOver && _currentCard['type'] == 'game_over') {
-      // We're already on a game over card - any swipe starts the fade out
-      _startGameEndFade();
-      return;
-    }
-    
-    if (_waitingForContinue) {
-      _proceedToNextCard();
-    } else {
-      final bool isLeftChoice = _dragPosition < 0;
-      final Map<String, dynamic> playedCard = _currentCard;
-      gameLogic.applyChoice(isLeftChoice);
+    if (_dragPosition.abs() > 100) {
+      _isProcessingChoice = true;
       
-      // Check if this choice caused a game over
-      if (_isGameOver) {
-        setState(() {
-          _currentCard = gameLogic.getGameOverCard()!;
-          _showReply = false;
-          _waitingForContinue = false;
-          _resetFlip = false;
-          _isProcessingChoice = false;
-        });
-        _resetCardPosition().then((_) {
-          _isProcessingChoice = false;
-        });
+      if (_isGameOver && _currentCard['type'] == 'game_over') {
+        // We're already on a game over card - any swipe starts the fade out
+        _startGameEndFade();
+        return;
+      }
+      
+      if (_waitingForContinue) {
+        _proceedToNextCard();
       } else {
-        _nextCard = gameLogic.currentCard;
+        final bool isLeftChoice = _dragPosition < 0;
+        _lastChoiceIsLeft = isLeftChoice; // Store the choice for reply text
+        final Map<String, dynamic> playedCard = _currentCard;
+        gameLogic.applyChoice(isLeftChoice);
         
-        if (playedCard.containsKey('replyText') && playedCard['replyText'] != null) {
+        // Check if this choice caused a game over
+        if (_isGameOver) {
           setState(() {
-            _waitingForContinue = true;
-            _showReply = true;
+            _currentCard = gameLogic.getGameOverCard()!;
+            _showReply = false;
+            _waitingForContinue = false;
+            _resetFlip = false;
+            _isProcessingChoice = false;
           });
           _resetCardPosition().then((_) {
             _isProcessingChoice = false;
           });
         } else {
-          _proceedToNextCard();
+          _nextCard = gameLogic.currentCard;
+          
+          // Check if this card has reply text (using the choice-based method)
+          final hasReplyText = (isLeftChoice && playedCard.containsKey('leftReplyText')) || 
+                              (!isLeftChoice && playedCard.containsKey('rightReplyText')) ||
+                              playedCard.containsKey('replyText');
+          
+          if (hasReplyText) {
+            setState(() {
+              _waitingForContinue = true;
+              _showReply = true;
+            });
+            _resetCardPosition().then((_) {
+              _isProcessingChoice = false;
+            });
+          } else {
+            _proceedToNextCard();
+          }
         }
       }
+    } else {
+      _resetCardPosition().then((_) {
+        _isProcessingChoice = false;
+      });
     }
-  } else {
-    _resetCardPosition().then((_) {
-      _isProcessingChoice = false;
-    });
   }
-}
 
-   void _proceedToNextCard() {
+  void _proceedToNextCard() {
   _resetCardPosition().then((_) {
     // Check for game over before proceeding
     if (_isGameOver && _currentCard['type'] != 'game_over') {
@@ -286,21 +334,23 @@ void _startGameEndFade() {
       
       Future.delayed(const Duration(milliseconds: 600), () {
         setState(() {
-          _currentCard = _nextCard;
+          _currentCard = gameLogic.currentCard;
           _calculateChoiceImpacts();
           _showReply = false;
           _waitingForContinue = false;
           _resetFlip = false;
           _isProcessingChoice = false;
+          _lastChoiceIsLeft = null; // Reset choice
         });
       });
     } else {
       setState(() {
-        _currentCard = _nextCard;
+        _currentCard = gameLogic.currentCard;
         _calculateChoiceImpacts();
         _showReply = false;
         _waitingForContinue = false;
         _isProcessingChoice = false;
+        _lastChoiceIsLeft = null; // Reset choice
       });
     }
   });
@@ -345,29 +395,31 @@ void _startGameEndFade() {
         return 'GAME OVER';
     }
   }
-  void _resetGame() {
-  setState(() {
-    gameLogic.resetGame();
-    _gameOver = false;
-    _dragPosition = 0.0;
-    _showReply = false;
-    _waitingForContinue = false;
-    _resetFlip = false;
-    _isProcessingChoice = false;
-    _currentCard = gameLogic.currentCard;
-    _nextCard = _currentCard;
-    _isHoveringLeft = false;
-    _isHoveringRight = false;
-    _hoverController.reverse();
-    _calculateChoiceImpacts(); // Recalculate for new game
-  });
-}
 
- @override
+  void _resetGame() {
+    setState(() {
+      gameLogic.resetGame();
+      _gameOver = false;
+      _dragPosition = 0.0;
+      _showReply = false;
+      _waitingForContinue = false;
+      _resetFlip = false;
+      _isProcessingChoice = false;
+      _currentCard = gameLogic.currentCard;
+      _nextCard = _currentCard;
+      _isHoveringLeft = false;
+      _isHoveringRight = false;
+      _hoverController.reverse();
+      _calculateChoiceImpacts(); 
+      _isNewRecord = false;
+      _lastChoiceIsLeft = null;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GameApp'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -382,44 +434,63 @@ void _startGameEndFade() {
         children: [
           // Game over background (shown after fade out)
           if (_showGameOverBackground)
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: _gameOverBackgroundColor,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _getGameOverIcon(),
-                      size: 80,
-                      color: Colors.white,
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: _gameOverBackgroundColor,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isNewRecord) ...[
+                    const Icon(
+                      Icons.emoji_events,
+                      size: 60,
+                      color: Colors.amber,
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _getGameOverMessage(),
-                      style: const TextStyle(
-                        fontSize: 32,
+                    const SizedBox(height: 10),
+                    const Text(
+                      'NEW RECORD!',
+                      style: TextStyle(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Colors.amber,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      'Survived ${gameLogic.day} days',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
                   ],
-                ),
+                  Text(
+                    _getGameOverMessage(),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Survived ${gameLogic.day} days',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Best: $_bestDaysSurvived days',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white54,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ],
               ),
             ),
+          ),
 
           // Main game content with fade transition
           if (!_showGameOverBackground)
@@ -431,19 +502,6 @@ void _startGameEndFade() {
         ],
       ),
     );
-  }
-
-  IconData _getGameOverIcon() {
-    if (!_isGameOver) return Icons.error;
-    
-    final gameOverCard = gameLogic.getGameOverCard()!;
-    final reason = gameOverCard['gameOverReason'];
-    
-    if (reason.toString().endsWith('_0')) {
-      return Icons.dangerous;
-    } else {
-      return Icons.emoji_events;
-    }
   }
 
   Widget _buildGameContent() {
@@ -600,7 +658,7 @@ void _startGameEndFade() {
           ),
         
         // Game over indicator (show when game over and not fading)
-        if (_isDragging && _isGameOver && !_isProcessingChoice && !_isFadingOut)
+        if (_isDragging && _isGameOver && _currentCard['type'] == 'game_over' && !_isProcessingChoice && !_isFadingOut)
           Positioned(
             bottom: 100,
             left: MediaQuery.of(context).size.width / 2 - 60,
@@ -613,35 +671,16 @@ void _startGameEndFade() {
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-            ),
-          ),
-        
-        // Reply card indicator (only show if not game over)
-        // In the build method, update the game over indicator section:
-          if (_isDragging && _isGameOver && _currentCard['type'] == 'game_over' && !_isProcessingChoice && !_isFadingOut)
-            Positioned(
-              bottom: 100,
-              left: MediaQuery.of(context).size.width / 2 - 60,
-              child: AnimatedOpacity(
-                opacity: _isDragging ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _currentCard['leftChoice'], // Use the actual choice text from the game over card
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
+                child: Text(
+                  _currentCard['leftChoice'], // Use the actual choice text from the game over card
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
+          ),
       ],
     );
   }

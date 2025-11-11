@@ -102,16 +102,21 @@ class _FlippableCardState extends State<FlippableCard> with SingleTickerProvider
     );
   }
 
-  Widget _buildBackCard(double angle) {
-    return Transform(
-      transform: Matrix4.identity()..rotateY(angle > 1.57 ? 0 : 3.14159),
-      alignment: Alignment.center,
-      child: Opacity(
-        opacity: (_animation.value - 0.5) * 2,
+Widget _buildBackCard(double angle) {
+  return Transform(
+    transform: Matrix4.identity()..rotateY(angle > 1.57 ? 0 : 3.14159),
+    alignment: Alignment.center,
+    child: Opacity(
+      opacity: (_animation.value - 0.5) * 2,
+      child: Transform(
+        // Add this additional transform to flip the text back to normal
+        transform: Matrix4.identity()..rotateY(3.14159),
+        alignment: Alignment.center,
         child: _buildCardBackContent(),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCardFrontContent() {
     return Card(
@@ -146,45 +151,45 @@ class _FlippableCardState extends State<FlippableCard> with SingleTickerProvider
     );
   }
 
-  Widget _buildCardBackContent() {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 300,
-        height: 400,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.chat_bubble, size: 40, color: Colors.amber),
-            const SizedBox(height: 20),
-            Text(
-              widget.cardData['replyText'] ?? 'The story continues...',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                height: 1.4,
+    Widget _buildCardBackContent() {
+      return Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 300,
+          height: 400,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white24, width: 1),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.chat_bubble, size: 40, color: Colors.amber),
+              const SizedBox(height: 20),
+              Text(
+                widget.cardData['replyText'] ?? 'The story continues...',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  height: 1.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-            const Text(
-              'Swipe any direction to continue...',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
+              const SizedBox(height: 40),
+              const Text(
+                'Swipe any direction to continue...',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
 }
