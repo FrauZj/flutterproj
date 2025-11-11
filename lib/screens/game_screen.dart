@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'card_logic.dart';
-import 'widgets/resource_indicator.dart';
-import 'widgets/game_card.dart';
-import 'flippable_card.dart';
-import 'widgets/change_bubble.dart';
-import 'fade_transition.dart';
+import '../card/card_logic.dart';
+import '../widgets/resource_indicator.dart';
+import '../widgets/game_card.dart';
+import '../card/flippable_card.dart';
+import '../widgets/change_bubble.dart';
+import '../card/fade_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'widgets/preferences_service.dart';
+import '../widgets/preferences_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
