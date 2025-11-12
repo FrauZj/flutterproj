@@ -1,4 +1,3 @@
-// resource_indicator.dart
 import 'package:flutter/material.dart';
 
 class ResourceIndicator extends StatelessWidget {

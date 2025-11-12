@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:try3/game_repository.dart';
+import 'package:try3/local/device_data_source.dart';
+import 'package:try3/remote/nakama_data_source.dart';
 import '../card/card_logic.dart';
 import '../widgets/resource_indicator.dart';
 import '../widgets/game_card.dart';
@@ -7,7 +10,7 @@ import '../card/flippable_card.dart';
 import '../widgets/change_bubble.dart';
 import '../card/fade_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/preferences_service.dart';
+import '../preferences_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -186,6 +189,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (isNewRecord) {
       PreferencesService.setBestDaysSurvived(currentDays);
     }
+
+    _submitScoreToLeaderboard(currentDays);
+
     setState(() {
       _isFadingOut = true;
       _isNewRecord = isNewRecord;
@@ -212,6 +218,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
   }
 
+    Future<void> _submitScoreToLeaderboard(int score) async {
+    try {
+      // You'll need to add GameRepository to your GameScreen
+      final GameRepository gameRepository = GameRepository(
+        DeviceDataSource(),
+        NakamaDataSource(),
+      );
+      
+      // Initialize session and submit score
+      await gameRepository.initSession();
+      await gameRepository.submitScore(score, leaderboardName);
+      print('Score submitted successfully: $score days');
+    } catch (e) {
+      print('Failed to submit score: $e');
+      // Don't show error to user since this is background operation
+    }
+  }
   void _onDragStart(DragStartDetails details) {
     if (_gameOver || _isProcessingChoice) return;
     setState(() {
@@ -413,6 +436,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _calculateChoiceImpacts(); 
       _isNewRecord = false;
       _lastChoiceIsLeft = null;
+
+
     });
   }
 
