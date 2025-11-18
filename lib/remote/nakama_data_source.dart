@@ -14,27 +14,47 @@ class NakamaDataSource {
     httpPort: 7350,
   );
 
-  late Session _currentSession;
+  Session? _currentSession;
 
-  Future<Session> initSession(String deviceId) async {
+  Future<Session> initSession(String deviceId, {String? username}) async {
     _currentSession = await client.authenticateDevice(
-      deviceId: 'test-device',
-      username: 'player-default'
+      deviceId: deviceId,
+      username: username,
     );
-    return _currentSession;
+    return _currentSession!;
+  }
+  
+  // Update username for existing session
+  Future<void> updateAccountUsername(String newUsername) async {
+    if (_currentSession == null) {
+      throw Exception('No active session');
+    }
+    
+    await client.updateAccount(
+      session: _currentSession!,
+      username: newUsername,
+    );
   }
   
   Future<LeaderboardRecordList> getLeaderboard([String leaderboardName = leaderboardName]) async {
+    if (_currentSession == null) {
+      throw Exception('No active session');
+    }
+    
     final LeaderboardRecordList list = await client.listLeaderboardRecords(
-      session: _currentSession,
+      session: _currentSession!,
       leaderboardName: leaderboardName,
     );
     return list;
   }
 
   Future<LeaderboardRecord> submitScore(int score, [String leaderboardName = leaderboardName]) async {
+    if (_currentSession == null) {
+      throw Exception('No active session');
+    }
+    
     return client.writeLeaderboardRecord(
-      session: _currentSession, 
+      session: _currentSession!, 
       leaderboardName: leaderboardName, 
       score: score
     );

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 import 'package:try3/preferences_service.dart';
+import 'package:try3/game_repository.dart';
+import 'package:try3/local/device_data_source.dart';
+import 'package:try3/remote/nakama_data_source.dart';
 
 class MainMenu extends StatefulWidget {
   const MainMenu({super.key});
@@ -13,11 +16,25 @@ class MainMenu extends StatefulWidget {
 class _MainMenuState extends State<MainMenu> {
   final TextEditingController _nameController = TextEditingController();
   bool _isNameSaved = false;
+  final GameRepository _gameRepository = GameRepository(
+    DeviceDataSource(),
+    NakamaDataSource(),
+  );
 
   @override
   void initState() {
     super.initState();
     _loadPlayerName();
+    _initializeSession();
+  }
+
+  void _initializeSession() async {
+    try {
+      // Initialize session without username first
+      await _gameRepository.initSession();
+    } catch (e) {
+      print('Failed to initialize session: $e');
+    }
   }
 
   void _loadPlayerName() async {
@@ -30,18 +47,34 @@ class _MainMenuState extends State<MainMenu> {
 
   void _saveName() async {
     if (_nameController.text.trim().isNotEmpty) {
-      await PreferencesService.setPlayerName(_nameController.text.trim());
-      setState(() {
-        _isNameSaved = true;
-      });
+      final newName = _nameController.text.trim();
       
-      // Show a brief confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Name saved: ${_nameController.text}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      try {
+        // Update username in Nakama leaderboard
+        await _gameRepository.updateUsername(newName);
+        
+        // Save to local preferences
+        await PreferencesService.setPlayerName(newName);
+        
+        setState(() {
+          _isNameSaved = true;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Name updated: $newName'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update name: $e'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -54,12 +87,10 @@ class _MainMenuState extends State<MainMenu> {
         ),
         child: Stack(
           children: [
-            // Main content
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Game Title
                   const Text(
                     'The Lost',
                     style: TextStyle(
@@ -71,7 +102,6 @@ class _MainMenuState extends State<MainMenu> {
                   ),
                   const SizedBox(height: 80),
                   
-                  // Play Game Button
                   SizedBox(
                     width: 200,
                     child: ElevatedButton(
@@ -100,7 +130,6 @@ class _MainMenuState extends State<MainMenu> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Leaderboard Button
                   SizedBox(
                     width: 200,
                     child: ElevatedButton(
@@ -131,7 +160,6 @@ class _MainMenuState extends State<MainMenu> {
               ),
             ),
             
-            // Name input field on the right middle
             Positioned(
               right: 40,
               top: MediaQuery.of(context).size.height / 2 - 25,
@@ -167,7 +195,7 @@ class _MainMenuState extends State<MainMenu> {
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isNameSaved ? Icons.check_circle : Icons.check_circle_outline,
-                            color: _isNameSaved ? Colors.grey : Colors.white54,
+                            color: _isNameSaved ? Colors.green : Colors.white54,
                           ),
                           onPressed: _saveName,
                         ),
@@ -185,6 +213,14 @@ class _MainMenuState extends State<MainMenu> {
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isNameSaved ? '✓ Name saved to leaderboard' : '',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 10,
                       ),
                     ),
                   ],

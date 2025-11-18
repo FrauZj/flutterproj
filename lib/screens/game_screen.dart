@@ -219,22 +219,26 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
     Future<void> _submitScoreToLeaderboard(int score) async {
-    try {
-      // You'll need to add GameRepository to your GameScreen
-      final GameRepository gameRepository = GameRepository(
-        DeviceDataSource(),
-        NakamaDataSource(),
-      );
-      
-      // Initialize session and submit score
-      await gameRepository.initSession();
-      await gameRepository.submitScore(score, leaderboardName);
-      print('Score submitted successfully: $score days');
-    } catch (e) {
-      print('Failed to submit score: $e');
-      // Don't show error to user since this is background operation
+  try {
+    final GameRepository gameRepository = GameRepository(
+      DeviceDataSource(),
+      NakamaDataSource(),
+    );
+    
+    final playerName = await PreferencesService.getPlayerName();
+    
+    await gameRepository.initSession(username: playerName);
+    
+    if (playerName.isNotEmpty) {
+      await gameRepository.updateUsername(playerName);
     }
+    
+    await gameRepository.submitScore(score, leaderboardName);
+    print('Score submitted successfully: $score days as $playerName');
+  } catch (e) {
+    print('Failed to submit score: $e');
   }
+}
   void _onDragStart(DragStartDetails details) {
     if (_gameOver || _isProcessingChoice) return;
     setState(() {
