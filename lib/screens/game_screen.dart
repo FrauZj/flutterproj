@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:try3/game_repository.dart';
 import 'package:try3/local/device_data_source.dart';
+import 'package:try3/platform_utils.dart';
 import 'package:try3/remote/nakama_data_source.dart';
 import '../card/card_logic.dart';
 import '../widgets/resource_indicator.dart';
@@ -105,75 +106,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return card;
   }
 
-  Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int value, Color color) {
-    final isLeftHighlighted = _isHoveringLeft && _leftChoiceHighlights[title.toLowerCase()]! > 0;
-    final isRightHighlighted = _isHoveringRight && _rightChoiceHighlights[title.toLowerCase()]! > 0;
-    
-    Color highlightColor = Colors.transparent;
-    double highlightIntensity = 0.0;
-    int changeAmount = 0;
-    
-    if (isLeftHighlighted) {
-      changeAmount = _leftChoiceChanges[title.toLowerCase()]!;
-      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
-      highlightIntensity = _leftChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
-    } else if (isRightHighlighted) {
-      changeAmount = _rightChoiceChanges[title.toLowerCase()]!;
-      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
-      highlightIntensity = _rightChoiceHighlights[title.toLowerCase()]! * _hoverAnimationValue;
-    }
-    
-    return SizedBox(
-      width: 50, // Fixed width to prevent layout shifts
-      height: 100, // Fixed height to accommodate bubble + indicator
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            bottom: 0,
-            child: ResourceIndicator(
-              title: title,
-              icon: icon,
-              value: value,
-              color: color,
-              isHighlighted: isLeftHighlighted || isRightHighlighted,
-              highlightColor: highlightColor,
-              highlightIntensity: highlightIntensity,
-            ),
-          ),
-          
-          // Change bubble positioned above the indicator
-          if ((isLeftHighlighted || isRightHighlighted) && changeAmount.abs() > 0)
-            Positioned(
-              top: 0, // Position at the top of the container
-              child: ChangeBubble(
-                changeAmount: changeAmount,
-                isPositive: changeAmount >= 0,
-                scale: highlightIntensity,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+  
 
-  void _calculateChoiceImpacts() {
-    final leftImpact = _currentCard['leftImpact'] as Map<String, int>;
-    final rightImpact = _currentCard['rightImpact'] as Map<String, int>;
+    void _calculateChoiceImpacts() {
+    final leftImpact = _currentCard['leftImpact'] as Map<String, int>? ?? {};
+    final rightImpact = _currentCard['rightImpact'] as Map<String, int>? ?? {};
     
     _leftChoiceHighlights = {};
     _rightChoiceHighlights = {};
-    _leftChoiceChanges = leftImpact;
-    _rightChoiceChanges = rightImpact;
+    _leftChoiceChanges = Map.from(leftImpact);
+    _rightChoiceChanges = Map.from(rightImpact);
     
-    // Calculate highlight intensities based on impact magnitude
-    leftImpact.forEach((resource, change) {
-      _leftChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
-    });
-    
-    rightImpact.forEach((resource, change) {
-      _rightChoiceHighlights[resource] = (change.abs() / 100.0).clamp(0.0, 1.0);
-    });
+    // Ensure all resources are present in the maps, even if they don't change
+    final allResources = ['hunger', 'sanity', 'money', 'reputation'];
+    for (var resource in allResources) {
+      _leftChoiceChanges.putIfAbsent(resource, () => 0);
+      _rightChoiceChanges.putIfAbsent(resource, () => 0);
+      
+      // Calculate highlight intensities based on impact magnitude
+      final leftChange = _leftChoiceChanges[resource]!;
+      final rightChange = _rightChoiceChanges[resource]!;
+      
+      _leftChoiceHighlights[resource] = (leftChange.abs() / 100.0).clamp(0.0, 1.0);
+      _rightChoiceHighlights[resource] = (rightChange.abs() / 100.0).clamp(0.0, 1.0);
+    }
   }
 
   @override
@@ -239,7 +195,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     print('Failed to submit score: $e');
   }
 }
-  void _onDragStart(DragStartDetails details) {
+    void _onDragStart(DragStartDetails details) {
     if (_gameOver || _isProcessingChoice) return;
     setState(() {
       _isDragging = true;
@@ -261,10 +217,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     setState(() {
       _dragPosition = details.localPosition.dx - _dragStart!.dx;
       
-      // Update hover state based on drag position
-      _isHoveringLeft = _dragPosition < -20;
-      _isHoveringRight = _dragPosition > 20;
+      // Update hover state based on drag position - use thresholds
+      final dragThreshold = getResponsiveValue(
+        context,
+        mobile: 10.0,
+        tablet: 15.0,
+        desktop: 20.0,
+      );
       
+      _isHoveringLeft = _dragPosition < -dragThreshold;
+      _isHoveringRight = _dragPosition > dragThreshold;
+      
+      // Only show highlights when clearly dragging to one side
       if (!_isHoveringLeft && !_isHoveringRight) {
         _hoverController.reverse();
       } else {
@@ -472,47 +436,97 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isNewRecord) ...[
-                    const Icon(
+                    Icon(
                       Icons.emoji_events,
-                      size: 60,
+                      size: getResponsiveValue(
+                        context,
+                        mobile: 40.0,
+                        tablet: 50.0,
+                        desktop: 60.0,
+                      ),
                       color: Colors.amber,
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
+                    SizedBox(height: getResponsiveValue(
+                      context,
+                      mobile: 5.0,
+                      tablet: 8.0,
+                      desktop: 10.0,
+                    )),
+                    Text(
                       'NEW RECORD!',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: getResponsiveValue(
+                          context,
+                          mobile: 18.0,
+                          tablet: 22.0,
+                          desktop: 24.0,
+                        ),
                         fontWeight: FontWeight.bold,
                         color: Colors.amber,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: getResponsiveValue(
+                      context,
+                      mobile: 5.0,
+                      tablet: 8.0,
+                      desktop: 10.0,
+                    )),
                   ],
                   Text(
                     _getGameOverMessage(),
-                    style: const TextStyle(
-                      fontSize: 32,
+                    style: TextStyle(
+                      fontSize: getResponsiveValue(
+                        context,
+                        mobile: 24.0,
+                        tablet: 28.0,
+                        desktop: 32.0,
+                      ),
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: getResponsiveValue(
+                    context,
+                    mobile: 5.0,
+                    tablet: 8.0,
+                    desktop: 10.0,
+                  )),
                   Text(
                     'Survived ${gameLogic.day} days',
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: getResponsiveValue(
+                        context,
+                        mobile: 14.0,
+                        tablet: 16.0,
+                        desktop: 18.0,
+                      ),
                       color: Colors.white70,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  SizedBox(height: getResponsiveValue(
+                    context,
+                    mobile: 2.0,
+                    tablet: 4.0,
+                    desktop: 5.0,
+                  )),
                   Text(
                     'Best: $_bestDaysSurvived days',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: getResponsiveValue(
+                        context,
+                        mobile: 12.0,
+                        tablet: 14.0,
+                        desktop: 16.0,
+                      ),
                       color: Colors.white54,
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  SizedBox(height: getResponsiveValue(
+                    context,
+                    mobile: 15.0,
+                    tablet: 20.0,
+                    desktop: 30.0,
+                  )),
                   const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
@@ -534,18 +548,44 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildGameContent() {
+    final cardWidth = getResponsiveValue(
+      context,
+      mobile: 250.0,
+      tablet: 280.0,
+      desktop: 300.0,
+    );
+    
+    final cardHeight = getResponsiveValue(
+      context,
+      mobile: 350.0,
+      tablet: 380.0,
+      desktop: 400.0,
+    );
+
+    final resourceSpacing = getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 70.0,
+      desktop: 100.0,
+    );
+
     return Stack(
       children: [
-        // Background deck of cards (only show if not game over)
-        if (!_isGameOver) ...[
+        // Background deck of cards (only show if not game over) - hide on mobile
+        if (!_isGameOver && !isMobile) ...[
           Positioned(
-            bottom: 150,
-            left: MediaQuery.of(context).size.width / 2 - 100,
+            bottom: getResponsiveValue(
+              context,
+              mobile: 120.0,
+              tablet: 140.0,
+              desktop: 150.0,
+            ),
+            left: MediaQuery.of(context).size.width / 2 - cardWidth / 2,
             child: Transform.rotate(
               angle: -0.1,
               child: Container(
-                width: 200,
-                height: 280,
+                width: cardWidth,
+                height: cardHeight,
                 decoration: BoxDecoration(
                   color: Colors.grey[800],
                   borderRadius: BorderRadius.circular(12),
@@ -561,13 +601,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            bottom: 160,
-            left: MediaQuery.of(context).size.width / 2 - 100,
+            bottom: getResponsiveValue(
+              context,
+              mobile: 130.0,
+              tablet: 150.0,
+              desktop: 160.0,
+            ),
+            left: MediaQuery.of(context).size.width / 2 - cardWidth / 2,
             child: Transform.rotate(
               angle: 0.05,
               child: Container(
-                width: 200,
-                height: 280,
+                width: cardWidth,
+                height: cardHeight,
                 decoration: BoxDecoration(
                   color: Colors.grey[700],
                   borderRadius: BorderRadius.circular(12),
@@ -595,8 +640,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: Transform.rotate(
                 angle: _dragPosition * 0.001,
                 child: SizedBox(
-                  width: 300,
-                  height: 400,
+                  width: cardWidth,
+                  height: cardHeight,
                   child: FlippableCard(
                     cardData: _effectiveCurrentCard,
                     showReply: _showReply,
@@ -612,63 +657,111 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         // Resource indicators (only show if not game over)
         if (!_isGameOver)
           Positioned(
-            top: 10,
+            top: getResponsiveValue(
+              context,
+              mobile: 5.0,
+              tablet: 8.0,
+              desktop: 10.0,
+            ),
             left: 0,
             right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 100,
-              children: [
-                _buildResourceIndicatorWithHighlight(
-                  'Hunger',
-                  Icons.restaurant,
-                  gameLogic.resources['hunger']!,
-                  Colors.orange,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: getResponsiveValue(
+                  context,
+                  mobile: 8.0,
+                  tablet: 16.0,
+                  desktop: 0.0,
                 ),
-                _buildResourceIndicatorWithHighlight(
-                  'Sanity',
-                  Icons.psychology,
-                  gameLogic.resources['sanity']!,
-                  Colors.purple,
-                ),
-                _buildResourceIndicatorWithHighlight(
-                  'Money',
-                  Icons.attach_money,
-                  gameLogic.resources['money']!,
-                  const Color.fromARGB(255, 0, 129, 4),
-                ),
-                _buildResourceIndicatorWithHighlight(
-                  'Reputation',
-                  Icons.thumb_up,
-                  gameLogic.resources['reputation']!,
-                  Colors.blue,
-                ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(width: resourceSpacing),
+                  _buildResourceIndicatorWithHighlight(
+                    'Hunger',
+                    Icons.restaurant,
+                    gameLogic.resources['hunger']!,
+                    Colors.orange,
+                  ),
+                  SizedBox(width: resourceSpacing),
+                  _buildResourceIndicatorWithHighlight(
+                    'Sanity',
+                    Icons.psychology,
+                    gameLogic.resources['sanity']!,
+                    Colors.purple,
+                  ),
+                  SizedBox(width: resourceSpacing),
+                  _buildResourceIndicatorWithHighlight(
+                    'Money',
+                    Icons.attach_money,
+                    gameLogic.resources['money']!,
+                    const Color.fromARGB(255, 0, 129, 4),
+                  ),
+                  SizedBox(width: resourceSpacing),
+                  _buildResourceIndicatorWithHighlight(
+                    'Reputation',
+                    Icons.thumb_up,
+                    gameLogic.resources['reputation']!,
+                    Colors.blue,
+                  ),
+                  SizedBox(width: resourceSpacing),
+                ],
+              ),
             ),
           ),
         
         // Day counter (only show if not game over)
         if (!_isGameOver)
           Positioned(
-            top: 40,
-            right: 20,
+            top: getResponsiveValue(
+              context,
+              mobile: 30.0,
+              tablet: 35.0,
+              desktop: 40.0,
+            ),
+            right: getResponsiveValue(
+              context,
+              mobile: 10.0,
+              tablet: 15.0,
+              desktop: 20.0,
+            ),
             child: Text(
               'Day ${gameLogic.day}',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: getResponsiveValue(
+                  context,
+                  mobile: 16.0,
+                  tablet: 18.0,
+                  desktop: 20.0,
+                ),
+              ),
             ),
           ),
         
         // Choice indicators (only show if not game over and not waiting for continue)
         if (_isDragging && !_waitingForContinue && !_isProcessingChoice && !_isGameOver)
           Positioned(
-            bottom: 100,
-            left: _dragPosition < 0 ? 50 : null,
-            right: _dragPosition > 0 ? 50 : null,
+            bottom: getResponsiveValue(
+              context,
+              mobile: 80.0,
+              tablet: 90.0,
+              desktop: 100.0,
+            ),
+            left: _dragPosition < 0 ? 
+              getResponsiveValue(context, mobile: 20.0, tablet: 30.0, desktop: 50.0) : null,
+            right: _dragPosition > 0 ? 
+              getResponsiveValue(context, mobile: 20.0, tablet: 30.0, desktop: 50.0) : null,
             child: AnimatedOpacity(
               opacity: _isDragging ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 10),
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(getResponsiveValue(
+                  context,
+                  mobile: 8.0,
+                  tablet: 10.0,
+                  desktop: 12.0,
+                )),
                 decoration: BoxDecoration(
                   color: _dragPosition < 0 ? Colors.red : Colors.green,
                   borderRadius: BorderRadius.circular(8),
@@ -677,9 +770,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   _dragPosition < 0 
                     ? _currentCard['leftChoice']
                     : _currentCard['rightChoice'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: getResponsiveValue(
+                      context,
+                      mobile: 12.0,
+                      tablet: 14.0,
+                      desktop: 16.0,
+                    ),
                   ),
                 ),
               ),
@@ -689,28 +788,115 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         // Game over indicator (show when game over and not fading)
         if (_isDragging && _isGameOver && _currentCard['type'] == 'game_over' && !_isProcessingChoice && !_isFadingOut)
           Positioned(
-            bottom: 100,
-            left: MediaQuery.of(context).size.width / 2 - 60,
+            bottom: getResponsiveValue(
+              context,
+              mobile: 80.0,
+              tablet: 90.0,
+              desktop: 100.0,
+            ),
+            left: MediaQuery.of(context).size.width / 2 - 
+              getResponsiveValue(context, mobile: 50.0, tablet: 55.0, desktop: 60.0),
             child: AnimatedOpacity(
               opacity: _isDragging ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 10),
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(getResponsiveValue(
+                  context,
+                  mobile: 8.0,
+                  tablet: 10.0,
+                  desktop: 12.0,
+                )),
                 decoration: BoxDecoration(
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _currentCard['leftChoice'], // Use the actual choice text from the game over card
-                  style: const TextStyle(
+                  _currentCard['leftChoice'],
+                  style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
+                    fontSize: getResponsiveValue(
+                      context,
+                      mobile: 12.0,
+                      tablet: 14.0,
+                      desktop: 16.0,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  // Update the resource indicator container size for mobile
+  Widget _buildResourceIndicatorWithHighlight(String title, IconData icon, int value, Color color) {
+    final resourceKey = title.toLowerCase();
+    
+    // Always show the indicator, but calculate highlight state
+    final isLeftHighlighted = _isHoveringLeft && _leftChoiceHighlights.containsKey(resourceKey) && _leftChoiceHighlights[resourceKey]! > 0;
+    final isRightHighlighted = _isHoveringRight && _rightChoiceHighlights.containsKey(resourceKey) && _rightChoiceHighlights[resourceKey]! > 0;
+    
+    Color highlightColor = Colors.transparent;
+    double highlightIntensity = 0.0;
+    int changeAmount = 0;
+    
+    if (isLeftHighlighted) {
+      changeAmount = _leftChoiceChanges[resourceKey]!;
+      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
+      highlightIntensity = _leftChoiceHighlights[resourceKey]! * _hoverAnimationValue;
+    } else if (isRightHighlighted) {
+      changeAmount = _rightChoiceChanges[resourceKey]!;
+      highlightColor = changeAmount >= 0 ? Colors.green : Colors.red;
+      highlightIntensity = _rightChoiceHighlights[resourceKey]! * _hoverAnimationValue;
+    }
+    
+    final containerWidth = getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 45.0,
+      desktop: 50.0,
+    );
+    
+    final containerHeight = getResponsiveValue(
+      context,
+      mobile: 80.0,
+      tablet: 90.0,
+      desktop: 100.0,
+    );
+
+    return SizedBox(
+      width: containerWidth,
+      height: containerHeight,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 0,
+            child: ResourceIndicator(
+              title: title,
+              icon: icon,
+              value: value,
+              color: color,
+              isHighlighted: isLeftHighlighted || isRightHighlighted,
+              highlightColor: highlightColor,
+              highlightIntensity: highlightIntensity,
+            ),
+          ),
+          
+          // Change bubble - show when highlighted AND there's an actual change
+          if ((isLeftHighlighted || isRightHighlighted) && changeAmount != 0)
+            Positioned(
+              top: 0,
+              child: ChangeBubble(
+                changeAmount: changeAmount,
+                isPositive: changeAmount >= 0,
+                scale: highlightIntensity,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

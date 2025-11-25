@@ -4,6 +4,7 @@ import 'package:try3/game_repository.dart';
 import 'package:try3/local/device_data_source.dart';
 import 'package:try3/remote/nakama_data_source.dart';
 import 'package:try3/preferences_service.dart';
+import '../platform_utils.dart'; // Add this import
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -45,13 +46,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildLeaderboardItem(int index, LeaderboardRecord record) {
-    final username = record.username ?? 'Unknown'; // Handle null username
+    final username = record.username ?? 'Unknown';
     final score = record.score;
-    final rank = index + 1; // Calculate rank from index
+    final rank = index + 1;
+    
+    final isMobileLayout = isMobile || getScreenSize(context) == ScreenSize.small;
     
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(
+        vertical: getResponsiveValue(
+          context,
+          mobile: 3.0,
+          tablet: 4.0,
+          desktop: 4.0,
+        ),
+        horizontal: getResponsiveValue(
+          context,
+          mobile: 8.0,
+          tablet: 12.0,
+          desktop: 16.0,
+        ),
+      ),
+      padding: EdgeInsets.all(getResponsiveValue(
+        context,
+        mobile: 12.0,
+        tablet: 14.0,
+        desktop: 16.0,
+      )),
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(12),
@@ -59,10 +80,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
       child: Row(
         children: [
-          // Position (with smoothed edges)
+          // Position
           Container(
-            width: 50,
-            height: 50,
+            width: getResponsiveValue(
+              context,
+              mobile: 40.0,
+              tablet: 45.0,
+              desktop: 50.0,
+            ),
+            height: getResponsiveValue(
+              context,
+              mobile: 40.0,
+              tablet: 45.0,
+              desktop: 50.0,
+            ),
             decoration: BoxDecoration(
               color: _getRankColor(rank),
               borderRadius: BorderRadius.circular(12),
@@ -70,35 +101,68 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             child: Center(
               child: Text(
                 '#$rank',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: getResponsiveValue(
+                    context,
+                    mobile: 14.0,
+                    tablet: 15.0,
+                    desktop: 16.0,
+                  ),
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
           
-          const SizedBox(width: 16),
+          SizedBox(width: getResponsiveValue(
+            context,
+            mobile: 12.0,
+            tablet: 14.0,
+            desktop: 16.0,
+          )),
           
           // Name
           Expanded(
             child: Text(
               username,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: getResponsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 15.0,
+                  desktop: 16.0,
+                ),
                 fontWeight: FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           
-          const SizedBox(width: 16),
+          SizedBox(width: getResponsiveValue(
+            context,
+            mobile: 12.0,
+            tablet: 14.0,
+            desktop: 16.0,
+          )),
           
           // Days survived
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: getResponsiveValue(
+                context,
+                mobile: 8.0,
+                tablet: 10.0,
+                desktop: 12.0,
+              ),
+              vertical: getResponsiveValue(
+                context,
+                mobile: 4.0,
+                tablet: 5.0,
+                desktop: 6.0,
+              ),
+            ),
             decoration: BoxDecoration(
               color: Colors.blue.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
@@ -106,9 +170,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
             child: Text(
               '$score days',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.blue,
-                fontSize: 14,
+                fontSize: getResponsiveValue(
+                  context,
+                  mobile: 12.0,
+                  tablet: 13.0,
+                  desktop: 14.0,
+                ),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -155,18 +224,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               )
             : _errorMessage.isNotEmpty
                 ? Center(
-                    child: Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+                    child: Padding(
+                      padding: EdgeInsets.all(getResponsiveValue(
+                        context,
+                        mobile: 16.0,
+                        tablet: 20.0,
+                        desktop: 0.0,
+                      )),
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   )
                 : _leaderboardRecords.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No leaderboard records yet',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: getResponsiveValue(
+                              context,
+                              mobile: 18.0,
+                              tablet: 22.0,
+                              desktop: 24.0,
+                            ),
                             color: Colors.white70,
                           ),
                         ),
