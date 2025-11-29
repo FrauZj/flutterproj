@@ -29,7 +29,6 @@ class NakamaDataSource {
     if (_currentSession == null) {
       throw Exception('No active session');
     }
-    
     await client.updateAccount(
       session: _currentSession!,
       username: newUsername,
