@@ -1,4 +1,3 @@
-// change_bubble.dart
 import 'package:flutter/material.dart';
 
 class ChangeBubble extends StatelessWidget {

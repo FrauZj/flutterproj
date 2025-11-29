@@ -1,4 +1,3 @@
-// resource_indicator.dart
 import 'package:flutter/material.dart';
 
 class ResourceIndicator extends StatelessWidget {
@@ -26,17 +25,6 @@ class ResourceIndicator extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Background highlight effect
-        // if (isHighlighted)
-        //   Container(
-        //     width: 50,
-        //     height: 50,
-        //     decoration: BoxDecoration(
-        //       color: highlightColor.withOpacity(0.3 * highlightIntensity),
-        //       shape: BoxShape.circle,
-        //     ),
-        //   ),
-        
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -58,7 +46,7 @@ class ResourceIndicator extends StatelessWidget {
             Icon(
               icon, 
               color: isHighlighted ? highlightColor : color, 
-              size: 30 + (5 * highlightIntensity), // Slight size increase when highlighted
+              size: 30 + (5 * highlightIntensity),
             ),
           ],
         ),

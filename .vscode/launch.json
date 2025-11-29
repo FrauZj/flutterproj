@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "flutter_app",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=NAKAMA_SERVER_KEY=defaultkey",
+                "--dart-define=NAKAMA_HOST=127.0.0.1",
+                "--dart-define=NAKAMA_SSL=false"
+            ]
+        }
+    ]
+}

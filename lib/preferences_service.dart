@@ -1,8 +1,8 @@
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesService {
   static const String _bestDaysKey = 'best_days_survived';
+  static const String _playerNameKey = 'player_name';
 
   static Future<int> getBestDaysSurvived() async {
     final prefs = await SharedPreferences.getInstance();
@@ -12,6 +12,16 @@ class PreferencesService {
   static Future<void> setBestDaysSurvived(int days) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_bestDaysKey, days);
+  }
+
+  static Future<String> getPlayerName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_playerNameKey) ?? '';
+  }
+
+  static Future<void> setPlayerName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_playerNameKey, name);
   }
 
   static Future<void> updateBestDaysSurvived(int currentDays) async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main_menu.dart'; 
-import 'leaderboard_screen.dart';
+import 'screens/mainMenu_screen.dart'; 
+
 
 class GameApp extends StatelessWidget {
   const GameApp({super.key});
@@ -22,3 +22,4 @@ class GameApp extends StatelessWidget {
     );
   }
 }
+
