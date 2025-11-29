@@ -99,40 +99,40 @@ jobs:
         name: web-build
         path: build/web
         retention-days: 7
-
-  build-windows:
-    name: Build Windows
-    runs-on: windows-latest
-    needs: test
+  # will do later if id want to 
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-latest
+  #   needs: test
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
+  #   - name: Setup Flutter
+  #     uses: subosito/flutter-action@v2
+  #     with:
+  #       flutter-version: ${{ env.FLUTTER_VERSION }}
+  #       cache: true
 
-    - name: Install dependencies
-      run: flutter pub get
+  #   - name: Install dependencies
+  #     run: flutter pub get
 
-    - name: Enable Windows desktop
-      run: flutter config --enable-windows-desktop
+  #   - name: Enable Windows desktop
+  #     run: flutter config --enable-windows-desktop
 
-    - name: Build Windows
-      run: flutter build windows --release
-      env:
-        NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
-        NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
+  #   - name: Build Windows
+  #     run: flutter build windows --release
+  #     env:
+  #       NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
+  #       NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
 
-    - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-build
-        path: build/windows/runner/Release/
-        retention-days: 7
+  #   - name: Upload Windows artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: windows-build
+  #       path: build/windows/runner/Release/
+  #       retention-days: 7
 
   deploy-web:
     name: Deploy to GitHub Pages
