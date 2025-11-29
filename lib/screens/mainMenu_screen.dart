@@ -63,7 +63,6 @@ class _MainMenuState extends State<MainMenu> {
             duration: const Duration(seconds: 2),
           ),
         );
-        
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
