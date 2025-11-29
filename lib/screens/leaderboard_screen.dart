@@ -3,8 +3,7 @@ import 'package:nakama/nakama.dart';
 import 'package:try3/game_repository.dart';
 import 'package:try3/local/device_data_source.dart';
 import 'package:try3/remote/nakama_data_source.dart';
-import 'package:try3/preferences_service.dart';
-import '../platform_utils.dart'; // Add this import
+import '../platform_utils.dart'; 
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -50,7 +49,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final score = record.score;
     final rank = index + 1;
     
-    final isMobileLayout = isMobile || getScreenSize(context) == ScreenSize.small;
+    // final isMobileLayout = isMobile || getScreenSize(context) == ScreenSize.small;
     
     return Container(
       margin: EdgeInsets.symmetric(
@@ -164,7 +163,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ),
             ),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              color: Colors.blue.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.blue),
             ),

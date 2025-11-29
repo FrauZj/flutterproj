@@ -9,7 +9,7 @@ class CardLogic {
   int currentAct = 1;
   
   // Track conditional card chain
-  List<int> _conditionalCardChain = [];
+  final List<int> _conditionalCardChain = [];
   bool get _isInConditionalChain => _conditionalCardChain.isNotEmpty;
 
   Map<String, int> resources = {
