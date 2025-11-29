@@ -33,7 +33,7 @@ class _MainMenuState extends State<MainMenu> {
     try {
       await _gameRepository.initSession();
     } catch (e) {
-      print('Failed to initialize session: $e');
+      // print('Failed to initialize session: $e');
     }
   }
 
@@ -231,7 +231,7 @@ class _MainMenuState extends State<MainMenu> {
               desktop: 16.0,
             )),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white24),
             ),
@@ -363,7 +363,7 @@ class _MainMenuState extends State<MainMenu> {
               desktop: 0.0,
             )),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white24),
             ),

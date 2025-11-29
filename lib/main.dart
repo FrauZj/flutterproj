@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'game_app.dart';
-import 'package:nakama/nakama.dart'; 
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

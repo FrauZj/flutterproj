@@ -134,7 +134,7 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
                       borderRadius: BorderRadius.circular(16.0),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 10.0,
                           spreadRadius: 2.0,
                           offset: Offset(4 + _cardOffsetX / 5, 4 + _cardOffsetY / 5),
@@ -217,7 +217,7 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
                   borderRadius: BorderRadius.circular(8.0),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 8.0,
                       offset: const Offset(2, 2),
                     ),

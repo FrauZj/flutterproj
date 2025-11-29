@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:try3/game_repository.dart';
 import 'package:try3/local/device_data_source.dart';
 import 'package:try3/platform_utils.dart';
 import 'package:try3/remote/nakama_data_source.dart';
 import '../card/card_logic.dart';
 import '../widgets/resource_indicator.dart';
-import '../widgets/game_card.dart';
 import '../card/flippable_card.dart';
 import '../widgets/change_bubble.dart';
 import '../card/fade_transition.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../preferences_service.dart';
 
 class GameScreen extends StatefulWidget {
@@ -33,7 +30,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _isProcessingChoice = false;
   bool _isFadingOut = false;
   bool _showGameOverBackground = false;
-  Color _gameOverBackgroundColor = Colors.black;
+  final Color _gameOverBackgroundColor = Colors.black;
   int _bestDaysSurvived = 0;
   bool _isNewRecord = false;
 
@@ -190,9 +187,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     
     await gameRepository.submitScore(score, leaderboardName);
-    print('Score submitted successfully: $score days as $playerName');
+    // print('Score submitted successfully: $score days as $playerName');
   } catch (e) {
-    print('Failed to submit score: $e');
+    // print('Failed to submit score: $e');
   }
 }
     void _onDragStart(DragStartDetails details) {
@@ -591,7 +588,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -618,7 +615,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

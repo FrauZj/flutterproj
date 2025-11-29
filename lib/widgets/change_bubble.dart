@@ -33,7 +33,7 @@ class ChangeBubble extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: (isPositive ? Colors.green : Colors.red).withOpacity(0.5),
+                color: (isPositive ? Colors.green : Colors.red).withValues(alpha: 0.5),
                 blurRadius: 8,
                 spreadRadius: 2,
               ),
