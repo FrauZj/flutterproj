@@ -2,7 +2,6 @@ import 'cards_data.dart';
 
 class CardLogic {
   List<Map<String, dynamic>> get allCards => CardsData.allCards;
-
   // Game state
   int currentCardIndex = 0;
   int score = 0;
