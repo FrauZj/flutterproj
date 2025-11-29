@@ -2,9 +2,9 @@ name: Flutter CI/CD
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main_real, 3 ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main_real, 3 ]
 
 env:
   FLUTTER_VERSION: '3.19.5'
