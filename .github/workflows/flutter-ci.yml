@@ -7,7 +7,7 @@ on:
     branches: [ main_real, 3 ]
 
 env:
-  FLUTTER_VERSION: '3.36.0'
+  FLUTTER_VERSION: '3.35.2'
 
 jobs:
   test:
