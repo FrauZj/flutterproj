@@ -69,11 +69,75 @@ jobs:
         path: build/app/outputs/flutter-apk/app-release.apk
         retention-days: 7
 
- deploy-web:
+  build-web:
+    name: Build Web Version
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Build Web
+      run: flutter build web --release
+      env:
+        NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
+        NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
+
+    - name: Upload Web artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-build
+        path: build/web
+        retention-days: 7
+  # will do later if id want to 
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-latest
+  #   needs: test
+    
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+
+  #   - name: Setup Flutter
+  #     uses: subosito/flutter-action@v2
+  #     with:
+  #       flutter-version: ${{ env.FLUTTER_VERSION }}
+  #       cache: true
+
+  #   - name: Install dependencies
+  #     run: flutter pub get
+
+  #   - name: Enable Windows desktop
+  #     run: flutter config --enable-windows-desktop
+
+  #   - name: Build Windows
+  #     run: flutter build windows --release
+  #     env:
+  #       NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
+  #       NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
+
+  #   - name: Upload Windows artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: windows-build
+  #       path: build/windows/runner/Release/
+  #       retention-days: 7
+
+  deploy-web:
   name: Deploy to GitHub Pages
   runs-on: ubuntu-latest
   needs: build-web
-  # Change this condition to match your actual branch names
   if: github.ref == 'refs/heads/main_real' || github.ref == 'refs/heads/3'
   
   permissions:
@@ -115,86 +179,6 @@ jobs:
   - name: Deploy to GitHub Pages
     id: deployment
     uses: actions/deploy-pages@v4
-  # will do later if id want to 
-  # build-windows:
-  #   name: Build Windows
-  #   runs-on: windows-latest
-  #   needs: test
-    
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-
-  #   - name: Setup Flutter
-  #     uses: subosito/flutter-action@v2
-  #     with:
-  #       flutter-version: ${{ env.FLUTTER_VERSION }}
-  #       cache: true
-
-  #   - name: Install dependencies
-  #     run: flutter pub get
-
-  #   - name: Enable Windows desktop
-  #     run: flutter config --enable-windows-desktop
-
-  #   - name: Build Windows
-  #     run: flutter build windows --release
-  #     env:
-  #       NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
-  #       NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
-
-  #   - name: Upload Windows artifact
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: windows-build
-  #       path: build/windows/runner/Release/
-  #       retention-days: 7
-
-  deploy-web:
-    name: Deploy to GitHub Pages
-    runs-on: ubuntu-latest
-    needs: build-web
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
-
-    - name: Install dependencies
-      run: flutter pub get
-
-    - name: Build Web for production
-      run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
-      env:
-        NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
-        NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: build/web
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
 
   create-release:
     name: Create Release
@@ -219,3 +203,7 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+its currently skipping gitpages when it shouldnt
+it should release it on git pages
+
