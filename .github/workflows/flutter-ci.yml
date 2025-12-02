@@ -204,6 +204,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-its currently skipping gitpages when it shouldnt
-it should release it on git pages
-
