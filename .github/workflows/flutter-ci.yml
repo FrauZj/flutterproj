@@ -135,50 +135,50 @@ jobs:
   #       retention-days: 7
 
   deploy-web:
-  name: Deploy to GitHub Pages
-  runs-on: ubuntu-latest
-  needs: build-web
-  if: github.ref == 'refs/heads/main_real' || github.ref == 'refs/heads/3'
-  
-  permissions:
-    contents: read
-    pages: write
-    id-token: write
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.ref == 'refs/heads/main_real' || github.ref == 'refs/heads/3'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
-  environment:
-    name: github-pages
-    url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  - name: Setup Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      flutter-version: ${{ env.FLUTTER_VERSION }}
-      cache: true
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
 
-  - name: Install dependencies
-    run: flutter pub get
+    - name: Install dependencies
+      run: flutter pub get
 
-  - name: Build Web for production
-    run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
-    env:
-      NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
-      NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
+    - name: Build Web for production
+      run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+      env:
+        NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
+        NAKAMA_HOST: ${{ secrets.NAKAMA_HOST }}
 
-  - name: Setup Pages
-    uses: actions/configure-pages@v4
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
 
-  - name: Upload artifact
-    uses: actions/upload-pages-artifact@v3
-    with:
-      path: build/web
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: build/web
 
-  - name: Deploy to GitHub Pages
-    id: deployment
-    uses: actions/deploy-pages@v4
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
 
   create-release:
     name: Create Release
@@ -203,4 +203,3 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
