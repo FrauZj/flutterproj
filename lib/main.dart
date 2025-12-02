@@ -5,6 +5,8 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const GameApp());
 }
+
+
 // void _initializeNakama() async{
 //   const serverKey = String.fromEnvironment('NAKAMA_SERVER_KEY', defaultValue: 'defaultkey');
 //   const host = String.fromEnvironment('NAKAMA_HOST', defaultValue: '127.0.0.1');
